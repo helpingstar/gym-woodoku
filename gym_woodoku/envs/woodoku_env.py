@@ -6,12 +6,12 @@ from gym.utils import seeding
 class WoodokuEnv(gym.Env):
 
     def __init__(self):
-        pass
+        self.state = 0
 
     def step(self, action):
         reward = action
         self.state += action
-        return (reward)
+        return (self.state, reward, 0, [])
 
     def reset(self):
         self.state = 0
