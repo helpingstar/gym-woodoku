@@ -4,6 +4,6 @@
 
 
 ```bash
-cd gym-soccer
+cd gym-woodoku
 pip install -e .
 ```
