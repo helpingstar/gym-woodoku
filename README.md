@@ -1,8 +1,5 @@
 # Installation
 
-`gym <= 0.21`
-
-
 ```bash
 cd gym-woodoku
 pip install -e .
@@ -11,11 +8,15 @@ pip install -e .
 # Usage
 
 ```python
+import gym_woodoku
 import gym
 
-print(gym.__version__)
+env = gym.make('gym_woodoku/Woodoku-v0')
+print(env.action_space)
+print(env.observation_space)
+observation, info = env.reset()
 
-env = gym.make('gym_woodoku:woodoku-v0')
-env.reset()
-print(env.step(1))
+print(observation)
+print(info)
+
 ```

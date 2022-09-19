@@ -1,6 +1,6 @@
 from gym.envs.registration import register
 
 register(
-    id='woodoku-v0',
+    id='gym_woodoku/Woodoku-v0',
     entry_point='gym_woodoku.envs:WoodokuEnv',
 )
