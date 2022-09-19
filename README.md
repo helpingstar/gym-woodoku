@@ -8,9 +8,11 @@ pip install -e .
 
 ## Colab
 
+```bash
 !git clone https://github.com/helpingstar/gym-woodoku.git
 %cd gym-woodoku
 !pip install -e .
+```
 
 # Usage
 
