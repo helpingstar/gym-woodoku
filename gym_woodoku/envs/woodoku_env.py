@@ -14,9 +14,9 @@ class WoodokuEnv(gym.Env):
         self.observation_space = spaces.Dict(
             {
                 "board": spaces.MultiBinary([9, 9]),
-                "block_1": spaces.MultiBinary([4, 4]),
-                "block_2": spaces.MultiBinary([4, 4]),
-                "block_3": spaces.MultiBinary([4, 4])
+                "block_1": spaces.MultiBinary([5, 5]),
+                "block_2": spaces.MultiBinary([5, 5]),
+                "block_3": spaces.MultiBinary([5, 5])
             }
         )
 
@@ -44,9 +44,9 @@ class WoodokuEnv(gym.Env):
         # randomly select three blocks
 
         # Below code is for test, will be replaced later.
-        self.block_1 = np.zeros((4, 4), np.uint8)
-        self.block_2 = np.zeros((4, 4), np.uint8)
-        self.block_3 = np.zeros((4, 4), np.uint8)
+        self.block_1 = np.zeros((5, 5), np.uint8)
+        self.block_2 = np.zeros((5, 5), np.uint8)
+        self.block_3 = np.zeros((5, 5), np.uint8)
 
     def _get_obs(self):
         return {
