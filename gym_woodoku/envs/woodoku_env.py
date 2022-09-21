@@ -38,6 +38,9 @@ class WoodokuEnv(gym.Env):
         observation = self._get_obs()
         info = self._get_info()
 
+        # 콤보를 나타냄
+        self.combo = 0
+
         return observation, info
 
     def _get_3_blocks_random(self):
@@ -97,6 +100,9 @@ class WoodokuEnv(gym.Env):
         # _crash_block 이용
         # yes -> 파괴를 반영한다.
         #           & reward += 파괴하며 얻는 점수
+
+        # 여기서 점수 산정 방식이 블록 놓기와 블록 파괴가 독립적이라면 reward를 따로 산정하고
+        # 독립적이지 않고 파괴에 한정된다면 파괴시에만 reward를 추가한다.
 
         # if) 블록 3개를 다 썼는가?
         # yes -> _get_3_blocks_random를 통해 리필한다.
