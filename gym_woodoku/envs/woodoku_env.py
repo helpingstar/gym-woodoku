@@ -70,8 +70,10 @@ class WoodokuEnv(gym.Env):
 
     def _is_valid_position(self, action) -> bool:
         # 해당 블록을 해당 action을 통해 가능한 위치인지 판단한다.
+    
         block = None
-        location = None
+        #board의 중심
+        location = None 
 
         #첫 번째 블록 선택 시
         if 0 <= action and action <= 80:
@@ -130,7 +132,7 @@ class WoodokuEnv(gym.Env):
         else:
             return False
 
-        #(2, 2)를 중심으로 주변만 확인
+        #(2, 2)를 중심으로 주변만 확인 
         for col in range(1, 4):
             for row in range(1, 4):
                 if block[col][row] == 1:
