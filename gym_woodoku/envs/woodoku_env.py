@@ -113,8 +113,44 @@ class WoodokuEnv(gym.Env):
 
         # return observation, reward, terminated, False, info
 
+    def _line_printer(line: np.ndarray):
+        return np.array2string(line, separator='', formatter={'str_kind': lambda x: x})
+
     def render(self):
-        pass
+        display_height = 17
+        display_width = 21
+        display_score_top = 1
+
+        new_board = np.where(self._board == 1, '■', '□')
+        new_block_1 = np.where(self.block_1 == 1, '■', '□')
+        new_block_2 = np.where(self.block_2 == 1, '■', '□')
+        new_block_3 = np.where(self.block_3 == 1, '■', '□')
+
+        game_display = np.full(
+            (display_height, display_width), ' ', dtype='<U1')
+
+        # copy board
+        game_display[1:10, 1:10] = new_board
+
+        # copy block
+        for i, block in enumerate([new_block_1, new_block_2, new_block_3]):
+            game_display[11:16, 7*i+1:7*i+6] = block
+
+        # create score_board
+        game_display[display_score_top+1,
+                     11:20] = np.array(list('┌'+'─'*7+'┐'))
+        game_display[display_score_top+2,
+                     11:20] = np.array(list('│'+' SCORE '+'│'))
+        game_display[display_score_top+3,
+                     11:20] = np.array(list('├'+'─'*7+'┤'))
+        game_display[display_score_top+4,
+                     11:20] = np.array(list('│'+'0'*7+'│'))
+        game_display[display_score_top+5,
+                     11:20] = np.array(list('└'+'─'*7+'┘'))
+
+        # Display game_display
+        for i in range(display_height):
+            print(self._line_printer(game_display[i])[1:-1])
 
     def close(self):
         pass
