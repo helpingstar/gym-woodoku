@@ -77,22 +77,18 @@ class WoodokuEnv(gym.Env):
 
         #첫 번째 블록 선택 시
         if 0 <= action and action <= 80:
-            block=self.block_1
+            block = self.block_1
             location = [action // 9, action % 9]
 
         #두 번째 블록 선택 시
         elif 81 <= action and action <= 161:
-            block=self.block_2
-            location = [(action-81) // 9, (action-81) % 9]
+            block = self.block_2
+            location = [(action - 81) // 9, (action - 81) % 9]
 
         #세 번째 블록 선택 시
-        elif 162 <= action and action <= 242:
-            block=self.block_3
-            location = [(action-162) // 9, (action-162) % 9]
-
-        #오류
         else:
-            return False
+            block = self.block_3
+            location = [(action - 162) // 9, (action - 162) % 9]
 
         #board와 block 비교
         for col in range(0, 5):
@@ -100,14 +96,13 @@ class WoodokuEnv(gym.Env):
                 #5*5에 block이 존재할 때
                 if block[col][row] == 1:
                     #board 위에 존재하지 않을 때
-                    if location[0]-(2-col) < 0 or location[1]-(2-row) < 0:
+                    if location[0] - (2 - col) < 0 or location[0] - (2 - col) >= 9 or location[1] - (2 - row) < 0 or location[1] - (2 - row) >= 9 :
                         return False
 
                     #board 위에 존재하지만 block이 있을 때
-                    elif self._board[location[0]-(2-col)][location[1]-(2-row)] == 1:
+                    if self._board[location[0] - (2 - col)][location[1] - (2 - row)] == 1:
                         return False
                 
-
         return True
     
 
@@ -118,26 +113,21 @@ class WoodokuEnv(gym.Env):
 
         #첫 번째 블록 선택 시
         if 0 <= action and action <= 80:
-            block=self.block_1
+            block = self.block_1
 
         #두 번째 블록 선택 시
-        elif 81 <= action and action <=161:
-            block=self.block_2
+        elif 81 <= action and action <= 161:
+            block = self.block_2
 
         #세 번째 블록 선택 시
-        elif 162 <= action and action <=242:
-            block=self.block_3
-
-        #오류
         else:
-            return False
+            block = self.block_3
 
         #(2, 2)를 중심으로 주변만 확인 
         for col in range(1, 4):
             for row in range(1, 4):
                 if block[col][row] == 1:
                     return True
-
 
         return False
 
