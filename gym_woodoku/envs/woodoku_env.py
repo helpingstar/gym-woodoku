@@ -70,11 +70,66 @@ class WoodokuEnv(gym.Env):
 
     def _is_valid_position(self, action) -> bool:
         # 해당 블록을 해당 action을 통해 가능한 위치인지 판단한다.
-        pass
+    
+        block = None
+        #board의 중심
+        location = None 
+
+        #첫 번째 블록 선택 시
+        if 0 <= action and action <= 80:
+            block = self.block_1
+            location = [action // 9, action % 9]
+
+        #두 번째 블록 선택 시
+        elif 81 <= action and action <= 161:
+            block = self.block_2
+            location = [(action - 81) // 9, (action - 81) % 9]
+
+        #세 번째 블록 선택 시
+        else:
+            block = self.block_3
+            location = [(action - 162) // 9, (action - 162) % 9]
+
+        #board와 block 비교
+        for col in range(0, 5):
+            for row in range(0, 5):
+                #5*5에 block이 존재할 때
+                if block[col][row] == 1:
+                    #board 위에 존재하지 않을 때
+                    if location[0] - (2 - col) < 0 or location[0] - (2 - col) >= 9 or location[1] - (2 - row) < 0 or location[1] - (2 - row) >= 9 :
+                        return False
+
+                    #board 위에 존재하지만 block이 있을 때
+                    if self._board[location[0] - (2 - col)][location[1] - (2 - row)] == 1:
+                        return False
+                
+        return True
+    
 
     def _is_valid_block(self, action) -> bool:
         # 해당 블록이 현재 유효한 블록인지 판단한다.
-        pass
+
+        block=None
+
+        #첫 번째 블록 선택 시
+        if 0 <= action and action <= 80:
+            block = self.block_1
+
+        #두 번째 블록 선택 시
+        elif 81 <= action and action <= 161:
+            block = self.block_2
+
+        #세 번째 블록 선택 시
+        else:
+            block = self.block_3
+
+        #(2, 2)를 중심으로 주변만 확인 
+        for col in range(1, 4):
+            for row in range(1, 4):
+                if block[col][row] == 1:
+                    return True
+
+        return False
 
     def _crash_block(self, action) -> int:
         # 부술 블록이 있으면 부수고 추가점수를 리턴한다.
@@ -85,12 +140,17 @@ class WoodokuEnv(gym.Env):
         https://www.gymlibrary.dev/api/core/#gym.Env.step
         return (observation, reward, terminated, truncated, info)
         """
+
         # if) action에 해당하는 블록이 존재하는가?
-        # yes -> return observation, 0, False, False, info
+        # no -> return observation, 0, False, False, info
+        if not self._is_valid_block(self, action):
+            return (self._get_obs(), self.reward, False, False, self._get_info())
 
         # if) n을 action위치에 놓을 수 있는가?
         # is_valid_position 이용
         # no -> return observation, 0, False, False, info
+        if not self._is_valid_position(self, action):
+            return (self._get_obs(), self.reward, False, False, self._get_info())
 
         # OR 연산 수행하여 블록을 놓는다.
         # 사용한 해당 블록칸을 0으로 만든다.
