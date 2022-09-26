@@ -70,63 +70,62 @@ class WoodokuEnv(gym.Env):
 
     def _is_valid_position(self, action) -> bool:
         # 해당 블록을 해당 action을 통해 가능한 위치인지 판단한다.
-    
         block = None
-        #board의 중심
-        location = None 
+        # block의 중심이 놓일 위치 [0~8, 0~8]
+        location = None
 
-        #첫 번째 블록 선택 시
+        # 첫 번째 블록 선택 시
         if 0 <= action and action <= 80:
             block = self.block_1
             location = [action // 9, action % 9]
 
-        #두 번째 블록 선택 시
+        # 두 번째 블록 선택 시
         elif 81 <= action and action <= 161:
             block = self.block_2
             location = [(action - 81) // 9, (action - 81) % 9]
 
-        #세 번째 블록 선택 시
+        # 세 번째 블록 선택 시
         else:
             block = self.block_3
             location = [(action - 162) // 9, (action - 162) % 9]
 
-        #board와 block 비교
+        # board와 block 비교
         for col in range(0, 5):
             for row in range(0, 5):
-                #5*5에 block이 존재할 때
-                if block[col][row] == 1:
-                    #board 위에 존재하지 않을 때
-                    if location[0] - (2 - col) < 0 or location[0] - (2 - col) >= 9 or location[1] - (2 - row) < 0 or location[1] - (2 - row) >= 9 :
+                # 5*5에 block이 존재할 때
+                if block[row][col] == 1:
+                    # location - 2 : 놓을 위치가 차지하는 5x5 중 (0,0)=(왼쪽위)
+                    # board 위에 존재하지 않을 때
+                    if not (0 <= (location[0] - 2 + col) < 9 and 0 <= (location[1] - 2 + row) < 9):
                         return False
 
-                    #board 위에 존재하지만 block이 있을 때
-                    if self._board[location[0] - (2 - col)][location[1] - (2 - row)] == 1:
+                    # board 위에 존재하지만 block이 있을 때
+                    if self._board[location[0] - 2 + col][location[1] - 2 + row] == 1:
                         return False
-                
+
         return True
-    
 
     def _is_valid_block(self, action) -> bool:
         # 해당 블록이 현재 유효한 블록인지 판단한다.
 
-        block=None
+        block = None
 
-        #첫 번째 블록 선택 시
+        # 첫 번째 블록 선택 시
         if 0 <= action and action <= 80:
             block = self.block_1
 
-        #두 번째 블록 선택 시
+        # 두 번째 블록 선택 시
         elif 81 <= action and action <= 161:
             block = self.block_2
 
-        #세 번째 블록 선택 시
+        # 세 번째 블록 선택 시
         else:
             block = self.block_3
 
-        #(2, 2)를 중심으로 주변만 확인 
+        # (2, 2)를 중심으로 주변만 확인
         for col in range(1, 4):
             for row in range(1, 4):
-                if block[col][row] == 1:
+                if block[row][col] == 1:
                     return True
 
         return False
@@ -140,6 +139,8 @@ class WoodokuEnv(gym.Env):
         https://www.gymlibrary.dev/api/core/#gym.Env.step
         return (observation, reward, terminated, truncated, info)
         """
+        err_msg = f"{action!r} ({type(action)}) invalid"
+        assert self.action_space.contains(action), err_msg
 
         # if) action에 해당하는 블록이 존재하는가?
         # no -> return observation, 0, False, False, info
