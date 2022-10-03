@@ -132,6 +132,7 @@ class WoodokuEnv(gym.Env):
 
     def _crash_block(self, action) -> int:
         # 부술 블록이 있으면 부수고 추가점수를 리턴한다.
+        # 부순 상태에 따라 self.combo를 업데이트한다.
         pass
 
     def step(self, action):
