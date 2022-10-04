@@ -131,9 +131,47 @@ class WoodokuEnv(gym.Env):
         return False
 
     def _crash_block(self, action) -> int:
-        # 부술 블록이 있으면 부수고 추가점수를 리턴한다.
-        # 부순 상태에 따라 self.combo를 업데이트한다.
-        pass
+        # 콤보를 세기 위한 변수 선언 
+        combo = 0 
+        # 9개 덩어리로 되어 있는 경우와 세로의 경우를 확인하기 위한 numpy
+        check_board = np.ones(18,dtype=np.uint8).reshape(2, 9) 
+        for i in range(9):
+            check = True
+            for j in range(9):
+                # 비어있는 경우
+                # 가로줄, 세로줄, 그 집단을 모두 false 
+                if self.board[i][j] == 0:
+                    check = False 
+                    v = (i//3) * 3 + j//3
+                    check_board[0][v] = 0 
+                    check_board[1][j] = 0
+            # 가로 줄이 가득 차 있는 경우     
+            # combo + 1 하고 그 줄을 0으로 만든다     
+            if check:
+                combo = combo + 1 
+                for k in range(9):
+                    self.board[i][k] = 0
+
+         # 가로 줄 이외의 9개로 차 있는 줄을 제거하는 for문
+        for k in range(18): 
+            if check_board[k//9][k%9] == 1:
+                # 9개 블럭
+                if k//9 == 0: 
+                    combo = combo + 1
+                    for v in range(9):
+                        self.board[(k//3) * 3 + v//3][(k%3) * 3 + v%3] = 0
+                # 세로 줄
+                elif k//9 == 1: 
+                    combo = combo + 1
+                    for y in range(9):
+                        self.board[y][k%9] = 0
+
+        # 깰 블럭이 있는 경우
+        if combo == 0: 
+            return 0
+        # 깰 블럭이 없는 경우
+        elif combo >= 1:
+            return 18 * combo  + (combo-1) * 10
 
     def step(self, action):
         """
