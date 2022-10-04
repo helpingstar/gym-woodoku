@@ -59,11 +59,11 @@ Each point is placed at the index `(2,2)` of the size array `(5,5)`. (zero based
 // TODO
 
 ## `action`
-Integers ranging from `0` to `242`
+Integers ranging from 0 to 242
 
-* `0~80` : use `block_1`
-  * Place `block_1` at (`action`-`0` // 9, `action`-`0` % 9)
-* `81~161` : use `block_2`
-  * Place `block_2` at (`action`-`81` // 9, `action`-`81` % 9)
-* `162~242` : use `block_3`
-  * Place `block_3` at (`action`-`162` // 9, `action`-`162` % 9)
+* 0~80 : use `block_1`
+  * Place `block_1` at (`action`-0 // 9, `action`-0 % 9)
+* 81~161 : use `block_2`
+  * Place `block_2` at (`action`-81 // 9, `action`-81 % 9)
+* 162~242 : use `block_3`
+  * Place `block_3` at (`action`-162 // 9, `action`-162 % 9)
