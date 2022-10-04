@@ -1,7 +1,9 @@
 import gym
-from gym import spaces
 # import pygame
 import numpy as np
+from gym import spaces
+
+from blocks import Get3Blcoks
 
 
 class WoodokuEnv(gym.Env):
@@ -45,11 +47,11 @@ class WoodokuEnv(gym.Env):
 
     def _get_3_blocks_random(self):
         # randomly select three blocks
-
+        self.block_1, self.block_2, self.block_3 = Get3Blcoks()
         # Below code is for test, will be replaced later.
-        self.block_1 = np.zeros((5, 5), np.uint8)
-        self.block_2 = np.zeros((5, 5), np.uint8)
-        self.block_3 = np.zeros((5, 5), np.uint8)
+        # self.block_1 = np.zeros((5, 5), np.uint8)
+        # self.block_2 = np.zeros((5, 5), np.uint8)
+        # self.block_3 = np.zeros((5, 5), np.uint8)
 
     def _get_obs(self):
         return {
