@@ -3,7 +3,7 @@ import gym
 import numpy as np
 from gym import spaces
 
-from blocks import Get3Blcoks
+from blocks import get_3_blocks
 
 
 class WoodokuEnv(gym.Env):
@@ -35,23 +35,20 @@ class WoodokuEnv(gym.Env):
 
         # get 3 blocks
         self._get_3_blocks_random()
+        self.block_exist = [True, True, True]
 
         # get observation and info
         observation = self._get_obs()
         info = self._get_info()
 
-        # 콤보를 나타냄
-        self.combo = 0
+        # 연속으로 몇 개를 부쉈는지를 나타낸다(한번에 몇개를 부쉈는지랑 다르다)
+        self.straight = 0
 
         return observation, info
 
     def _get_3_blocks_random(self):
         # randomly select three blocks
-        self.block_1, self.block_2, self.block_3 = Get3Blcoks()
-        # Below code is for test, will be replaced later.
-        # self.block_1 = np.zeros((5, 5), np.uint8)
-        # self.block_2 = np.zeros((5, 5), np.uint8)
-        # self.block_3 = np.zeros((5, 5), np.uint8)
+        self.block_1, self.block_2, self.block_3 = get_3_blocks()
 
     def _get_obs(self):
         return {
@@ -60,6 +57,15 @@ class WoodokuEnv(gym.Env):
             "block_2": self.block_2,
             "block_3": self.block_3
         }
+
+    def _get_combined_obs(self):
+        # Four states are combined into one 15x15 array as states for deep learning.
+        comb_state = np.zeros((15, 15))
+        comb_state[0:9, 3:11] = self._board
+        comb_state[10:15, 0:5] = self.block_1
+        comb_state[10:15, 5:10] = self.block_2
+        comb_state[10:15, 10:15] = self.block_3
+        return comb_state
 
     def _get_info(self):
         return {}
