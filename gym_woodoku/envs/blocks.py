@@ -333,11 +333,6 @@ blocks = np.array([[[0, 0, 0, 0, 0],
                   )
 
 
-def Get3Blcoks() -> np.array:
+def get_3_blocks() -> tuple:
     a = random.sample(range(len(blocks)), 3)
     return blocks[a[0]], blocks[a[1]], blocks[a[2]]
-
-
-print(len(blocks))
-
-print(Get3Blcoks())
