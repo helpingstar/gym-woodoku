@@ -2,8 +2,9 @@ import gym
 # import pygame
 import numpy as np
 from gym import spaces
-
 from blocks import get_3_blocks
+
+MAX_BLOCK_NUM = 3
 
 
 class WoodokuEnv(gym.Env):
@@ -74,7 +75,15 @@ class WoodokuEnv(gym.Env):
         # 소유한 블록으로 더 이상 게임이 진행 가능한 지 체크한다
         # is_valid_position함수를 3X9X9 경우의 수에 대입해서 모두 false가 나오면
         # true를 리턴한다.
-        pass
+        for blk_num in range(MAX_BLOCK_NUM):
+            if self.block_exist[blk_num]:
+                for act in range(blk_num*81, (blk_num+1) * 81):
+                    if self._is_valid_position(act):
+                        return False
+        return True
+
+    def _nonexist_block(self, action):
+        self.block_exist[action // 81] = False
 
     def _is_valid_position(self, action) -> bool:
         # 해당 블록을 해당 action을 통해 가능한 위치인지 판단한다.
@@ -116,27 +125,10 @@ class WoodokuEnv(gym.Env):
     def _is_valid_block(self, action) -> bool:
         # 해당 블록이 현재 유효한 블록인지 판단한다.
 
-        block = None
-
-        # 첫 번째 블록 선택 시
-        if 0 <= action and action <= 80:
-            block = self.block_1
-
-        # 두 번째 블록 선택 시
-        elif 81 <= action and action <= 161:
-            block = self.block_2
-
-        # 세 번째 블록 선택 시
+        if self.block_exist[action // 81]:
+            return True
         else:
-            block = self.block_3
-
-        # (2, 2)를 중심으로 주변만 확인
-        for col in range(1, 4):
-            for row in range(1, 4):
-                if block[row][col] == 1:
-                    return True
-
-        return False
+            return False
 
     def _crash_block(self, action) -> int:
         # 부술 블록이 있으면 부수고 추가점수를 리턴한다.
@@ -151,16 +143,20 @@ class WoodokuEnv(gym.Env):
         err_msg = f"{action!r} ({type(action)}) invalid"
         assert self.action_space.contains(action), err_msg
 
+        terminated = False
+
         # if) action에 해당하는 블록이 존재하는가?
         # no -> return observation, 0, False, False, info
         if not self._is_valid_block(self, action):
-            return (self._get_obs(), self.reward, False, False, self._get_info())
+            return (self._get_obs(), self.reward, terminated, False, self._get_info())
 
         # if) n을 action위치에 놓을 수 있는가?
         # is_valid_position 이용
         # no -> return observation, 0, False, False, info
         if not self._is_valid_position(self, action):
-            return (self._get_obs(), self.reward, False, False, self._get_info())
+            return (self._get_obs(), self.reward, terminated, False, self._get_info())
+
+        self._nonexist_block(action)
 
         # OR 연산 수행하여 블록을 놓는다.
         # 사용한 해당 블록칸을 0으로 만든다.
@@ -180,6 +176,7 @@ class WoodokuEnv(gym.Env):
         # if 더이상 게임을 수행할 수 있는가?
         # _is_terminated 이용
         # terminated = _is_terminated
+        terminated = self._is_terminated()
 
         # return observation, reward, terminated, False, info
 
