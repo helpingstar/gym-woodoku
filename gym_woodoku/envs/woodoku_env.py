@@ -36,7 +36,7 @@ class WoodokuEnv(gym.Env):
 
         # get 3 blocks
         self._get_3_blocks_random()
-        self.block_exist = [True, True, True]
+        self._block_exist = [True, True, True]
 
         # get observation and info
         observation = self._get_obs()
@@ -49,23 +49,23 @@ class WoodokuEnv(gym.Env):
 
     def _get_3_blocks_random(self):
         # randomly select three blocks
-        self.block_1, self.block_2, self.block_3 = get_3_blocks()
+        self._block_1, self._block_2, self._block_3 = get_3_blocks()
 
     def _get_obs(self):
         return {
             "board": self._board,
-            "block_1": self.block_1,
-            "block_2": self.block_2,
-            "block_3": self.block_3
+            "block_1": self._block_1,
+            "block_2": self._block_2,
+            "block_3": self._block_3
         }
 
     def _get_combined_obs(self):
         # Four states are combined into one 15x15 array as states for deep learning.
         comb_state = np.zeros((15, 15))
         comb_state[0:9, 3:11] = self._board
-        comb_state[10:15, 0:5] = self.block_1
-        comb_state[10:15, 5:10] = self.block_2
-        comb_state[10:15, 10:15] = self.block_3
+        comb_state[10:15, 0:5] = self._block_1
+        comb_state[10:15, 5:10] = self._block_2
+        comb_state[10:15, 10:15] = self._block_3
         return comb_state
 
     def _get_info(self):
@@ -76,14 +76,14 @@ class WoodokuEnv(gym.Env):
         # is_valid_position함수를 3X9X9 경우의 수에 대입해서 모두 false가 나오면
         # true를 리턴한다.
         for blk_num in range(MAX_BLOCK_NUM):
-            if self.block_exist[blk_num]:
+            if self._block_exist[blk_num]:
                 for act in range(blk_num*81, (blk_num+1) * 81):
                     if self._is_valid_position(act):
                         return False
         return True
 
     def _nonexist_block(self, action):
-        self.block_exist[action // 81] = False
+        self._block_exist[action // 81] = False
 
     def _is_valid_position(self, action) -> bool:
         # 해당 블록을 해당 action을 통해 가능한 위치인지 판단한다.
@@ -93,17 +93,17 @@ class WoodokuEnv(gym.Env):
 
         # 첫 번째 블록 선택 시
         if 0 <= action and action <= 80:
-            block = self.block_1
+            block = self._block_1
             location = [action // 9, action % 9]
 
         # 두 번째 블록 선택 시
         elif 81 <= action and action <= 161:
-            block = self.block_2
+            block = self._block_2
             location = [(action - 81) // 9, (action - 81) % 9]
 
         # 세 번째 블록 선택 시
         else:
-            block = self.block_3
+            block = self._block_3
             location = [(action - 162) // 9, (action - 162) % 9]
 
         # board와 block 비교
@@ -125,7 +125,7 @@ class WoodokuEnv(gym.Env):
     def _is_valid_block(self, action) -> bool:
         # 해당 블록이 현재 유효한 블록인지 판단한다.
 
-        if self.block_exist[action // 81]:
+        if self._block_exist[action // 81]:
             return True
         else:
             return False
@@ -183,15 +183,19 @@ class WoodokuEnv(gym.Env):
     def _line_printer(line: np.ndarray):
         return np.array2string(line, separator='', formatter={'str_kind': lambda x: x})
 
+    @property
+    def block_exist(self):
+        return self._block_exist
+
     def render(self):
         display_height = 17
         display_width = 21
         display_score_top = 1
 
         new_board = np.where(self._board == 1, '■', '□')
-        new_block_1 = np.where(self.block_1 == 1, '■', '□')
-        new_block_2 = np.where(self.block_2 == 1, '■', '□')
-        new_block_3 = np.where(self.block_3 == 1, '■', '□')
+        new__block_1 = np.where(self._block_1 == 1, '■', '□')
+        new__block_2 = np.where(self._block_2 == 1, '■', '□')
+        new__block_3 = np.where(self._block_3 == 1, '■', '□')
 
         game_display = np.full(
             (display_height, display_width), ' ', dtype='<U1')
@@ -200,7 +204,7 @@ class WoodokuEnv(gym.Env):
         game_display[1:10, 1:10] = new_board
 
         # copy block
-        for i, block in enumerate([new_block_1, new_block_2, new_block_3]):
+        for i, block in enumerate([new__block_1, new__block_2, new__block_3]):
             game_display[11:16, 7*i+1:7*i+6] = block
 
         # create score_board
