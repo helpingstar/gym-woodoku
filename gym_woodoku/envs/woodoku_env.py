@@ -172,6 +172,8 @@ class WoodokuEnv(gym.Env):
 
         # if) 블록 3개를 다 썼는가?
         # yes -> _get_3_blocks_random를 통해 리필한다.
+        if sum(self._block_exist) == 0:
+            self._get_3_blocks_random()
 
         # if 더이상 게임을 수행할 수 있는가?
         # _is_terminated 이용
