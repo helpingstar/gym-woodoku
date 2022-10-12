@@ -2,14 +2,15 @@ import gym
 # import pygame
 import numpy as np
 from gym import spaces
-from blocks import get_3_blocks
+import blocks
+import random
 
 MAX_BLOCK_NUM = 3
 
 
 class WoodokuEnv(gym.Env):
 
-    def __init__(self, render_mode=None):
+    def __init__(self, game='woodoku', render_mode=None):
 
         # observation_space : (관찰의 경우의 수)
         # board : 블록을 놓을 공간
@@ -26,6 +27,13 @@ class WoodokuEnv(gym.Env):
         # action_space : (액션 경우의 수)
         # 3개의 블록중 하나를 (9x9의 위치중 하나에 배치한다)
         self.action_space = spaces.MultiDiscrete(np.array([3, 9, 9]))
+
+        # 블록의 종류를 얻는다.
+        self._block_list = blocks[game]
+
+    def _get_3_blocks(self):
+        a = random.sample(range(self._block_list.shape[0]), 3)
+        return self._block_list[a[0]], self._block_list[a[1]], self._block_list[a[2]]
 
     def reset(self, seed=None, options=None):
         # 시드 초기화
@@ -49,7 +57,7 @@ class WoodokuEnv(gym.Env):
 
     def _get_3_blocks_random(self):
         # randomly select three blocks
-        self._block_1, self._block_2, self._block_3 = get_3_blocks()
+        self._block_1, self._block_2, self._block_3 = self._get_3_blocks()
 
     def _get_obs(self):
         return {
