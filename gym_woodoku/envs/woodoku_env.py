@@ -2,7 +2,7 @@ import gym
 # import pygame
 import numpy as np
 from gym import spaces
-import blocks
+from .blocks import blocks
 import random
 
 MAX_BLOCK_NUM = 3
@@ -10,28 +10,41 @@ MAX_BLOCK_NUM = 3
 
 class WoodokuEnv(gym.Env):
 
-    def __init__(self, game='woodoku', render_mode=None):
-
+    def __init__(self, game_mode='woodoku', crash33=True, obs_mode='total_square', reward_mode='woodoku', render_mode=None):
+        # // TODO 각 모드에 대한 assert
+        self.game_mode = game_mode
+        self.crash33 = crash33
+        self.obs_mode = obs_mode
+        self.rewad_mode = reward_mode
+        self.render_mode = render_mode
         # observation_space : (관찰의 경우의 수)
         # board : 블록을 놓을 공간
         # block : 3개의 블록들
-        self.observation_space = spaces.Dict(
-            {
-                "board": spaces.MultiBinary([9, 9]),
-                "block_1": spaces.MultiBinary([5, 5]),
-                "block_2": spaces.MultiBinary([5, 5]),
-                "block_3": spaces.MultiBinary([5, 5])
-            }
-        )
+
+        if self.obs_mode == 'divided':
+            self.observation_space = spaces.Dict(
+                {
+                    "board": spaces.MultiBinary([9, 9]),
+                    "block_1": spaces.MultiBinary([5, 5]),
+                    "block_2": spaces.MultiBinary([5, 5]),
+                    "block_3": spaces.MultiBinary([5, 5])
+                }
+            )
+        elif self.obs_mode == 'total_square':
+            self.observation_space = spaces.Dict(
+                {
+                    "total_square": spaces.MultiBinary([15, 15])
+                }
+            )
 
         # action_space : (액션 경우의 수)
         # 3개의 블록중 하나를 (9x9의 위치중 하나에 배치한다)
-        self.action_space = spaces.MultiDiscrete(np.array([3, 9, 9]))
+        self.action_space = spaces.Discrete(243)
 
         # 블록의 종류를 얻는다.
-        self._block_list = blocks[game]
+        self._block_list = blocks[game_mode]
 
-    def _get_3_blocks(self):
+    def _get_3_blocks(self) -> tuple:
         a = random.sample(range(self._block_list.shape[0]), 3)
         return self._block_list[a[0]], self._block_list[a[1]], self._block_list[a[2]]
 
@@ -47,7 +60,11 @@ class WoodokuEnv(gym.Env):
         self._block_exist = [True, True, True]
 
         # get observation and info
-        observation = self._get_obs()
+        if self.obs_mode == 'divided':
+            observation = self._get_obs()
+        elif self.obs_mode == 'total_square':
+            observation = self._get_combined_obs()
+
         info = self._get_info()
 
         # 연속으로 몇 개를 부쉈는지를 나타낸다(한번에 몇개를 부쉈는지랑 다르다)
@@ -70,11 +87,11 @@ class WoodokuEnv(gym.Env):
     def _get_combined_obs(self):
         # Four states are combined into one 15x15 array as states for deep learning.
         comb_state = np.zeros((15, 15))
-        comb_state[0:9, 3:11] = self._board
+        comb_state[0:9, 3:12] = self._board
         comb_state[10:15, 0:5] = self._block_1
         comb_state[10:15, 5:10] = self._block_2
         comb_state[10:15, 10:15] = self._block_3
-        return comb_state
+        return {'total_square': comb_state}
 
     def _get_info(self):
         return {}
@@ -155,13 +172,13 @@ class WoodokuEnv(gym.Env):
 
         # if) action에 해당하는 블록이 존재하는가?
         # no -> return observation, 0, False, False, info
-        if not self._is_valid_block(self, action):
+        if not self._is_valid_block(action):
             return (self._get_obs(), self.reward, terminated, False, self._get_info())
 
         # if) n을 action위치에 놓을 수 있는가?
         # is_valid_position 이용
         # no -> return observation, 0, False, False, info
-        if not self._is_valid_position(self, action):
+        if not self._is_valid_position(action):
             return (self._get_obs(), self.reward, terminated, False, self._get_info())
 
         self._nonexist_block(action)
@@ -190,7 +207,7 @@ class WoodokuEnv(gym.Env):
 
         # return observation, reward, terminated, False, info
 
-    def _line_printer(line: np.ndarray):
+    def _line_printer(self, line: np.ndarray):
         return np.array2string(line, separator='', formatter={'str_kind': lambda x: x})
 
     @property
