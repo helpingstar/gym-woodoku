@@ -10,17 +10,35 @@ MAX_BLOCK_NUM = 3
 
 class WoodokuEnv(gym.Env):
 
-    def __init__(self, game_mode='woodoku', crash33=True, obs_mode='total_square', reward_mode='woodoku', render_mode=None):
-        # // TODO 각 모드에 대한 assert
-        self.game_mode = game_mode
-        self.crash33 = crash33
-        self.obs_mode = obs_mode
-        self.rewad_mode = reward_mode
-        self.render_mode = render_mode
-        # observation_space : (관찰의 경우의 수)
-        # board : 블록을 놓을 공간
-        # block : 3개의 블록들
+    # TODO what is render_fps
+    metadata = {"game_modes": ['woodoku'],
+                "obs_modes": ['divided', 'total_square'],
+                "reward_modes": ['woodoku'],
+                "render_modes": ['console', 'plot', 'pygame'],
+                "render_fps": 1}
 
+    def __init__(self, game_mode='woodoku', obs_mode='total_square', reward_mode='woodoku', render_mode='console', crash33=True):
+
+        # ASSERT
+        err_msg = f"{game_mode} is not in {self.metadata['game_modes']}"
+        assert game_mode in self.metadata['game_modes'], err_msg
+        self.game_mode = game_mode
+
+        err_msg = f"{obs_mode} is not in {self.metadata['obs_modes']}"
+        assert obs_mode in self.metadata['obs_modes'], err_msg
+        self.obs_mode = obs_mode
+
+        err_msg = f"{reward_mode} is not in {self.metadata['reward_modes']}"
+        assert reward_mode in self.metadata['reward_modes']
+        self.rewad_mode = reward_mode
+
+        err_msg = f"{render_mode} is not in {self.metadata['render_modes']}"
+        assert render_mode is None or render_mode in self.metadata['render_modes'], err_msg
+        self.render_mode = render_mode
+
+        self.crash33 = crash33
+
+        # define observation_space by obs_mode
         if self.obs_mode == 'divided':
             self.observation_space = spaces.Dict(
                 {
@@ -41,7 +59,7 @@ class WoodokuEnv(gym.Env):
         # 3개의 블록중 하나를 (9x9의 위치중 하나에 배치한다)
         self.action_space = spaces.Discrete(243)
 
-        # 블록의 종류를 얻는다.
+        # get kind of blocks by game_mode
         self._block_list = blocks[game_mode]
 
     def _get_3_blocks(self) -> tuple:
@@ -49,7 +67,7 @@ class WoodokuEnv(gym.Env):
         return self._block_list[a[0]], self._block_list[a[1]], self._block_list[a[2]]
 
     def reset(self, seed=None, options=None):
-        # 시드 초기화
+        # reset seed
         super().reset(seed=seed)
 
         # make board clean
