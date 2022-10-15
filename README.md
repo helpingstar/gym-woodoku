@@ -63,3 +63,27 @@ Integers ranging from 0 to 242
   * Place `block_2` at (`action`-81 // 9, `action`-81 % 9)
 * 162~242 : use `block_3`
   * Place `block_3` at (`action`-162 // 9, `action`-162 % 9)
+
+## `metadata`
+
+### `game_mode`
+Gets the type of block to use in the game.
+* `woodoku`
+
+### `obs_mode`
+Decide how to obtain the observation.
+
+* `divided` : 1 board and 3 blocks
+  * `{"board": (9 X 9), block_(1/2/3): (5 X 5)}`
+* `total_square` : (15 X 15)
+
+### `reward_modes`
+Determine the scoring method.
+* `one` : Get a reward of 1 for each block destroyed.
+* `woodoku` : Follow Woodoku's scoring system.
+
+### `render_modes`
+Determines gym rendering method.
+* `console` : The game screen appears on the console.
+* `plot` : // TODO
+* `pygame` :  Render through the pygame library.
