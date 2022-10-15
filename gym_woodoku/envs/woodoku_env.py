@@ -13,7 +13,7 @@ class WoodokuEnv(gym.Env):
     # TODO what is render_fps
     metadata = {"game_modes": ['woodoku'],
                 "obs_modes": ['divided', 'total_square'],
-                "reward_modes": ['woodoku'],
+                "reward_modes": ['one', 'woodoku'],
                 "render_modes": ['console', 'plot', 'pygame'],
                 "render_fps": 1}
 
@@ -233,40 +233,41 @@ class WoodokuEnv(gym.Env):
         return self._block_exist
 
     def render(self):
-        display_height = 17
-        display_width = 21
-        display_score_top = 1
+        if self.render_mode == 'console':
+            display_height = 17
+            display_width = 21
+            display_score_top = 1
 
-        new_board = np.where(self._board == 1, '■', '□')
-        new__block_1 = np.where(self._block_1 == 1, '■', '□')
-        new__block_2 = np.where(self._block_2 == 1, '■', '□')
-        new__block_3 = np.where(self._block_3 == 1, '■', '□')
+            new_board = np.where(self._board == 1, '■', '□')
+            new__block_1 = np.where(self._block_1 == 1, '■', '□')
+            new__block_2 = np.where(self._block_2 == 1, '■', '□')
+            new__block_3 = np.where(self._block_3 == 1, '■', '□')
 
-        game_display = np.full(
-            (display_height, display_width), ' ', dtype='<U1')
+            game_display = np.full(
+                (display_height, display_width), ' ', dtype='<U1')
 
-        # copy board
-        game_display[1:10, 1:10] = new_board
+            # copy board
+            game_display[1:10, 1:10] = new_board
 
-        # copy block
-        for i, block in enumerate([new__block_1, new__block_2, new__block_3]):
-            game_display[11:16, 7*i+1:7*i+6] = block
+            # copy block
+            for i, block in enumerate([new__block_1, new__block_2, new__block_3]):
+                game_display[11:16, 7*i+1:7*i+6] = block
 
-        # create score_board
-        game_display[display_score_top+1,
-                     11:20] = np.array(list('┌'+'─'*7+'┐'))
-        game_display[display_score_top+2,
-                     11:20] = np.array(list('│'+' SCORE '+'│'))
-        game_display[display_score_top+3,
-                     11:20] = np.array(list('├'+'─'*7+'┤'))
-        game_display[display_score_top+4,
-                     11:20] = np.array(list('│'+'0'*7+'│'))
-        game_display[display_score_top+5,
-                     11:20] = np.array(list('└'+'─'*7+'┘'))
+            # create score_board
+            game_display[display_score_top+1,
+                         11:20] = np.array(list('┌'+'─'*7+'┐'))
+            game_display[display_score_top+2,
+                         11:20] = np.array(list('│'+' SCORE '+'│'))
+            game_display[display_score_top+3,
+                         11:20] = np.array(list('├'+'─'*7+'┤'))
+            game_display[display_score_top+4,
+                         11:20] = np.array(list('│'+'0'*7+'│'))
+            game_display[display_score_top+5,
+                         11:20] = np.array(list('└'+'─'*7+'┘'))
 
-        # Display game_display
-        for i in range(display_height):
-            print(self._line_printer(game_display[i])[1:-1])
+            # Display game_display
+            for i in range(display_height):
+                print(self._line_printer(game_display[i])[1:-1])
 
     def close(self):
         pass
