@@ -1,4 +1,3 @@
-from tarfile import BLOCKSIZE
 import gym
 # import pygame
 import numpy as np
