@@ -1,3 +1,4 @@
+from tarfile import BLOCKSIZE
 import gym
 # import pygame
 import numpy as np
@@ -6,6 +7,7 @@ from .blocks import blocks
 import random
 
 MAX_BLOCK_NUM = 3
+BLOCK_WIDTH = 5
 
 
 class WoodokuEnv(gym.Env):
@@ -127,6 +129,8 @@ class WoodokuEnv(gym.Env):
 
     def _nonexist_block(self, action):
         self._block_exist[action // 81] = False
+        block, _ = self.action_to_blk_pos()
+        block[:, :] = 0
 
     def _is_valid_position(self, action) -> bool:
         # 해당 블록을 해당 action을 통해 가능한 위치인지 판단한다.
@@ -165,9 +169,8 @@ class WoodokuEnv(gym.Env):
 
         return True
 
+    # Check whether the block corresponding to the action is valid.
     def _is_valid_block(self, action) -> bool:
-        # 해당 블록이 현재 유효한 블록인지 판단한다.
-
         if self._block_exist[action // 81]:
             return True
         else:
@@ -177,6 +180,44 @@ class WoodokuEnv(gym.Env):
         # 부술 블록이 있으면 부수고 추가점수를 리턴한다.
         # 부순 상태에 따라 self.combo를 업데이트한다.
         pass
+
+    def action_to_blk_pos(self, action) -> tuple:
+        # First Block
+        if 0 <= action and action <= 80:
+            block = self._block_1
+            location = [action // 9, action % 9]
+
+        # Second Block
+        elif 81 <= action and action <= 161:
+            block = self._block_2
+            location = [(action - 81) // 9, (action - 81) % 9]
+
+        # Third Block
+        else:
+            block = self._block_3
+            location = [(action - 162) // 9, (action - 162) % 9]
+
+        return block, location
+
+    # Gets the position relative to the center of the border of the block.
+    def get_block_square(self, block) -> tuple:
+        row = []
+        col = []
+
+        for r in range(block.shape[0]):
+            if block[r, :].sum() > 0:
+                row.append(r)
+        for c in range(block.shape[1]):
+            if block[:, c].sum() > 0:
+                col.append(c)
+        return (row[0], row[-1], col[0], col[-1])
+
+    # c_loc : where the center of the block is placed
+    def place_block(self, action):
+        block, c_loc = self.action_to_blk_pos(action)
+        r1, r2, c1, c2 = self.get_block_square(block)
+        self._board[c_loc+r1-2:c_loc+r2-1, c_loc+c1 - 2, c_loc+c2-1] \
+            += block[r1:r2+1, c1:c2+1]
 
     def step(self, action):
         """
@@ -188,21 +229,20 @@ class WoodokuEnv(gym.Env):
 
         terminated = False
 
-        # if) action에 해당하는 블록이 존재하는가?
-        # no -> return observation, 0, False, False, info
+        # Checks whether there is a block corresponding to the action,
+        #   and returns if there is not.
         if not self._is_valid_block(action):
             return (self._get_obs(), self.reward, terminated, False, self._get_info())
 
-        # if) n을 action위치에 놓을 수 있는가?
-        # is_valid_position 이용
-        # no -> return observation, 0, False, False, info
+        # Check if the block can be placed at the location corresponding to the action.
+        #   Return if not possible.
         if not self._is_valid_position(action):
             return (self._get_obs(), self.reward, terminated, False, self._get_info())
 
+        self.place_block(action)
+        # make block zero and _block_exist to False
         self._nonexist_block(action)
 
-        # OR 연산 수행하여 블록을 놓는다.
-        # 사용한 해당 블록칸을 0으로 만든다.
         # reward += 놓으면서 얻는 점수
 
         # if) 파괴할 블록이 있는가?
@@ -213,14 +253,12 @@ class WoodokuEnv(gym.Env):
         # 여기서 점수 산정 방식이 블록 놓기와 블록 파괴가 독립적이라면 reward를 따로 산정하고
         # 독립적이지 않고 파괴에 한정된다면 파괴시에만 reward를 추가한다.
 
-        # if) 블록 3개를 다 썼는가?
-        # yes -> _get_3_blocks_random를 통해 리필한다.
+        # Check if all 3 blocks have been used.
+        # If the block does not exist, a new block is obtained.
         if sum(self._block_exist) == 0:
             self._get_3_blocks_random()
 
-        # if 더이상 게임을 수행할 수 있는가?
-        # _is_terminated 이용
-        # terminated = _is_terminated
+        # Check if the game is terminated.
         terminated = self._is_terminated()
 
         # return observation, reward, terminated, False, info
