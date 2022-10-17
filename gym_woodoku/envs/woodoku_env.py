@@ -90,6 +90,7 @@ class WoodokuEnv(gym.Env):
 
     def _get_3_blocks_random(self):
         # randomly select three blocks
+        self._block_exist = [True, True, True]
         self._block_1, self._block_2, self._block_3 = self._get_3_blocks()
 
     def _get_obs(self):
