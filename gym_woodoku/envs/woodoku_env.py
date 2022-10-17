@@ -72,17 +72,14 @@ class WoodokuEnv(gym.Env):
         super().reset(seed=seed)
 
         # make board clean
-        self._board = np.zeros((9, 9), dtype=np.uint8)
+        self._board = np.zeros((9, 9))
 
         # get 3 blocks
         self._get_3_blocks_random()
         self._block_exist = [True, True, True]
 
         # get observation and info
-        if self.obs_mode == 'divided':
-            observation = self._get_obs()
-        elif self.obs_mode == 'total_square':
-            observation = self._get_combined_obs()
+        observation = self._get_obs()
 
         info = self._get_info()
 
@@ -96,21 +93,21 @@ class WoodokuEnv(gym.Env):
         self._block_1, self._block_2, self._block_3 = self._get_3_blocks()
 
     def _get_obs(self):
-        return {
-            "board": self._board,
-            "block_1": self._block_1,
-            "block_2": self._block_2,
-            "block_3": self._block_3
-        }
-
-    def _get_combined_obs(self):
-        # Four states are combined into one 15x15 array as states for deep learning.
-        comb_state = np.zeros((15, 15))
-        comb_state[0:9, 3:12] = self._board
-        comb_state[10:15, 0:5] = self._block_1
-        comb_state[10:15, 5:10] = self._block_2
-        comb_state[10:15, 10:15] = self._block_3
-        return {'total_square': comb_state}
+        if self.obs_mode == 'divided':
+            return {
+                "board": self._board,
+                "block_1": self._block_1,
+                "block_2": self._block_2,
+                "block_3": self._block_3
+            }
+        elif self.obs_mode == 'total_square':
+            # Four states are combined into one 15x15 array as states   for deep learning.
+            comb_state = np.zeros((15, 15))
+            comb_state[0:9, 3:12] = self._board
+            comb_state[10:15, 0:5] = self._block_1
+            comb_state[10:15, 5:10] = self._block_2
+            comb_state[10:15, 10:15] = self._block_3
+            return {'total_square': comb_state}
 
     def _get_info(self):
         return {}
@@ -128,7 +125,7 @@ class WoodokuEnv(gym.Env):
 
     def _nonexist_block(self, action):
         self._block_exist[action // 81] = False
-        block, _ = self.action_to_blk_pos()
+        block, _ = self.action_to_blk_pos(action)
         block[:, :] = 0
 
     def _is_valid_position(self, action) -> bool:
@@ -215,7 +212,7 @@ class WoodokuEnv(gym.Env):
     def place_block(self, action):
         block, c_loc = self.action_to_blk_pos(action)
         r1, r2, c1, c2 = self.get_block_square(block)
-        self._board[c_loc+r1-2:c_loc+r2-1, c_loc+c1 - 2, c_loc+c2-1] \
+        self._board[c_loc[0]+r1-2:c_loc[0]+r2-1, c_loc[1]+c1 - 2: c_loc[1]+c2-1] \
             += block[r1:r2+1, c1:c2+1]
 
     def step(self, action):
@@ -231,12 +228,12 @@ class WoodokuEnv(gym.Env):
         # Checks whether there is a block corresponding to the action,
         #   and returns if there is not.
         if not self._is_valid_block(action):
-            return (self._get_obs(), self.reward, terminated, False, self._get_info())
+            return (self._get_obs(), 0, terminated, False, self._get_info())
 
         # Check if the block can be placed at the location corresponding to the action.
         #   Return if not possible.
         if not self._is_valid_position(action):
-            return (self._get_obs(), self.reward, terminated, False, self._get_info())
+            return (self._get_obs(), 0, terminated, False, self._get_info())
 
         self.place_block(action)
         # make block zero and _block_exist to False
@@ -260,7 +257,8 @@ class WoodokuEnv(gym.Env):
         # Check if the game is terminated.
         terminated = self._is_terminated()
 
-        # return observation, reward, terminated, False, info
+        # // TODO
+        return self._get_obs(), 0, terminated, False, self._get_info()
 
     def _line_printer(self, line: np.ndarray):
         return np.array2string(line, separator='', formatter={'str_kind': lambda x: x})
