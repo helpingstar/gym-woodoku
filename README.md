@@ -20,10 +20,12 @@ pip install -e .
 import gym_woodoku
 import gym
 
-env = gym.make('gym_woodoku/Woodoku-v0')
+env = gym.make('gym_woodoku/Woodoku-v0', game_mode='woodoku')
 observation, info = env.reset()
 env.render()
-
+for i in range(1000):
+    env.step(env.action_space.sample())
+    env.render()
 ```
 
 # environment
