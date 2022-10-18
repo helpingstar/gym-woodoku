@@ -7,6 +7,7 @@ import random
 
 MAX_BLOCK_NUM = 3
 BLOCK_WIDTH = 5
+BOARD_LENGTH = 9
 
 
 class WoodokuEnv(gym.Env):
@@ -15,10 +16,10 @@ class WoodokuEnv(gym.Env):
     metadata = {"game_modes": ['woodoku'],
                 "obs_modes": ['divided', 'total_square'],
                 "reward_modes": ['one', 'woodoku'],
-                "render_modes": ['console', 'plot', 'pygame'],
+                "render_modes": ['ansi', 'plot', 'pygame'],
                 "render_fps": 1}
 
-    def __init__(self, game_mode='woodoku', obs_mode='total_square', reward_mode='woodoku', render_mode='console', crash33=True):
+    def __init__(self, game_mode='woodoku', obs_mode='total_square', reward_mode='woodoku', render_mode='ansi', crash33=True):
 
         # ASSERT
         err_msg = f"{game_mode} is not in {self.metadata['game_modes']}"
@@ -31,7 +32,7 @@ class WoodokuEnv(gym.Env):
 
         err_msg = f"{reward_mode} is not in {self.metadata['reward_modes']}"
         assert reward_mode in self.metadata['reward_modes']
-        self.rewad_mode = reward_mode
+        self.reward_mode = reward_mode
 
         err_msg = f"{render_mode} is not in {self.metadata['render_modes']}"
         assert render_mode is None or render_mode in self.metadata['render_modes'], err_msg
@@ -86,10 +87,14 @@ class WoodokuEnv(gym.Env):
         # 연속으로 몇 개를 부쉈는지를 나타낸다(한번에 몇개를 부쉈는지랑 다르다)
         self.straight = 0
 
+        # score
+        self.score = 0
+
         return observation, info
 
     def _get_3_blocks_random(self):
         # randomly select three blocks
+        self._block_exist = [True, True, True]
         self._block_1, self._block_2, self._block_3 = self._get_3_blocks()
 
     def _get_obs(self):
@@ -172,10 +177,61 @@ class WoodokuEnv(gym.Env):
         else:
             return False
 
+    # If there is a block to destroy, destroy it and get the corresponding reward.
     def _crash_block(self, action) -> int:
-        # 부술 블록이 있으면 부수고 추가점수를 리턴한다.
-        # 부순 상태에 따라 self.combo를 업데이트한다.
-        pass
+
+        combo = 0
+        dup_check = np.zeros((9, 9))
+        rows = []
+        cols = []
+        square33 = []
+
+        block, _ = self.action_to_blk_pos(action)
+
+        # check row
+        for r in range(BOARD_LENGTH):
+            if self._board[r, :].sum() == 9:
+                if dup_check[r, :].sum() != 9:
+                    combo += 1
+                    dup_check[r, :] = 1
+                    rows.append(r)
+        # check col
+        for c in range(BOARD_LENGTH):
+            if self._board[:, c].sum() == 9:
+                if dup_check[:, c].sum() != 9:
+                    combo += 1
+                    dup_check[:, c] = 1
+                    cols.append(c)
+        # check square33
+        for r in range(0, BOARD_LENGTH, 3):
+            for c in range(0, BOARD_LENGTH, 3):
+                if self._board[r:r+3, c:c+3].sum() == 9:
+                    if dup_check[r:r+3, c:c+3].sum() != 9:
+                        combo += 1
+                        dup_check[r:r+3, c:c+3] = 1
+                        square33.append((r, c))
+
+        for r in rows:
+            self._board[r, :] = 0
+        for c in cols:
+            self._board[:, c] = 0
+        for r, c in square33:
+            self._board[r:r+3, c:c+3] = 0
+
+        combo = len(rows) + len(cols) + len(square33)
+        if combo > 0:
+            self.straight += 1
+
+        if self.reward_mode == 'one':
+            if combo == 0:
+                return 1
+            else:
+                return 1 + combo + self.straight
+        elif self.reward_mode == 'woodoku':
+            if combo == 0:
+                return block.sum()
+            else:
+                return 28 * combo + 10 * self.straight + block.sum() - 20
 
     def action_to_blk_pos(self, action) -> tuple:
         # First Block
@@ -236,18 +292,13 @@ class WoodokuEnv(gym.Env):
             return (self._get_obs(), 0, terminated, False, self._get_info())
 
         self.place_block(action)
+
+        # If there is a block to destroy, destroy it and get the corresponding reward.
+        reward = self._crash_block(action)
+        self.score += reward
+
         # make block zero and _block_exist to False
         self._nonexist_block(action)
-
-        # reward += 놓으면서 얻는 점수
-
-        # if) 파괴할 블록이 있는가?
-        # _crash_block 이용
-        # yes -> 파괴를 반영한다.
-        #           & reward += 파괴하며 얻는 점수
-
-        # 여기서 점수 산정 방식이 블록 놓기와 블록 파괴가 독립적이라면 reward를 따로 산정하고
-        # 독립적이지 않고 파괴에 한정된다면 파괴시에만 reward를 추가한다.
 
         # Check if all 3 blocks have been used.
         # If the block does not exist, a new block is obtained.
@@ -257,8 +308,7 @@ class WoodokuEnv(gym.Env):
         # Check if the game is terminated.
         terminated = self._is_terminated()
 
-        # // TODO
-        return self._get_obs(), 0, terminated, False, self._get_info()
+        return self._get_obs(), reward, terminated, False, self._get_info()
 
     def _line_printer(self, line: np.ndarray):
         return np.array2string(line, separator='', formatter={'str_kind': lambda x: x})
@@ -268,7 +318,7 @@ class WoodokuEnv(gym.Env):
         return self._block_exist
 
     def render(self):
-        if self.render_mode == 'console':
+        if self.render_mode == 'ansi':
             display_height = 17
             display_width = 21
             display_score_top = 1
@@ -296,7 +346,7 @@ class WoodokuEnv(gym.Env):
             game_display[display_score_top+3,
                          11:20] = np.array(list('├'+'─'*7+'┤'))
             game_display[display_score_top+4,
-                         11:20] = np.array(list('│'+'0'*7+'│'))
+                         11:20] = np.array(list(f'│{self.score:07d}│'))
             game_display[display_score_top+5,
                          11:20] = np.array(list('└'+'─'*7+'┘'))
 
