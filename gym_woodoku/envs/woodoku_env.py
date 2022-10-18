@@ -66,7 +66,7 @@ class WoodokuEnv(gym.Env):
 
     def _get_3_blocks(self) -> tuple:
         a = random.sample(range(self._block_list.shape[0]), 3)
-        return self._block_list[a[0]], self._block_list[a[1]], self._block_list[a[2]]
+        return self._block_list[a[0]].copy(), self._block_list[a[1]].copy(), self._block_list[a[2]].copy()
 
     def reset(self, seed=None, options=None):
         # reset seed
