@@ -155,17 +155,17 @@ class WoodokuEnv(gym.Env):
             location = [(action - 162) // 9, (action - 162) % 9]
 
         # board와 block 비교
-        for col in range(0, 5):
-            for row in range(0, 5):
+        for row in range(0, 5):
+            for col in range(0, 5):
                 # 5*5에 block이 존재할 때
                 if block[row][col] == 1:
                     # location - 2 : 놓을 위치가 차지하는 5x5 중 (0,0)=(왼쪽위)
                     # board 위에 존재하지 않을 때
-                    if not (0 <= (location[0] - 2 + col) < 9 and 0 <= (location[1] - 2 + row) < 9):
+                    if not (0 <= (location[0] - 2 + row) < 9 and 0 <= (location[1] - 2 + col) < 9):
                         return False
 
                     # board 위에 존재하지만 block이 있을 때
-                    if self._board[location[0] - 2 + col][location[1] - 2 + row] == 1:
+                    if self._board[location[0] - 2 + row][location[1] - 2 + col] == 1:
                         return False
 
         return True
