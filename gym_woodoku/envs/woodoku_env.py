@@ -6,7 +6,7 @@ from .blocks import blocks
 import random
 
 MAX_BLOCK_NUM = 3
-BLOCK_WIDTH = 5
+BLOCK_LENGTH = 5
 BOARD_LENGTH = 9
 
 
@@ -57,11 +57,10 @@ class WoodokuEnv(gym.Env):
                 }
             )
 
-        # action_space : (액션 경우의 수)
-        # 3개의 블록중 하나를 (9x9의 위치중 하나에 배치한다)
+        # action_space : (Block X Width X Height)
         self.action_space = spaces.Discrete(243)
 
-        # get kind of blocks by game_mode
+        # get kind of blocks by `game_mode`
         self._block_list = blocks[game_mode]
 
     def _get_3_blocks(self) -> tuple:
@@ -84,7 +83,8 @@ class WoodokuEnv(gym.Env):
 
         info = self._get_info()
 
-        # 연속으로 몇 개를 부쉈는지를 나타낸다(한번에 몇개를 부쉈는지랑 다르다)
+        # Shows how many pieces are broken in a row
+        # (this is different from how many pieces are broken at once)
         self.straight = 0
 
         # score
@@ -118,9 +118,8 @@ class WoodokuEnv(gym.Env):
         return {}
 
     def _is_terminated(self) -> bool:
-        # 소유한 블록으로 더 이상 게임이 진행 가능한 지 체크한다
-        # is_valid_position함수를 3X9X9 경우의 수에 대입해서 모두 false가 나오면
-        # true를 리턴한다.
+        # Check if the game can be continued with the blocks you own
+        # If any number of cases can proceed, False is returned.
         for blk_num in range(MAX_BLOCK_NUM):
             if self._block_exist[blk_num]:
                 for act in range(blk_num*81, (blk_num+1) * 81):
@@ -129,42 +128,25 @@ class WoodokuEnv(gym.Env):
         return True
 
     def _nonexist_block(self, action):
+        # Deactivate the block corresponding to the action and set the array to 0.
         self._block_exist[action // 81] = False
         block, _ = self.action_to_blk_pos(action)
         block[:, :] = 0
 
     def _is_valid_position(self, action) -> bool:
-        # 해당 블록을 해당 action을 통해 가능한 위치인지 판단한다.
-        block = None
-        # block의 중심이 놓일 위치 [0~8, 0~8]
-        location = None
-
-        # 첫 번째 블록 선택 시
-        if 0 <= action and action <= 80:
-            block = self._block_1
-            location = [action // 9, action % 9]
-
-        # 두 번째 블록 선택 시
-        elif 81 <= action and action <= 161:
-            block = self._block_2
-            location = [(action - 81) // 9, (action - 81) % 9]
-
-        # 세 번째 블록 선택 시
-        else:
-            block = self._block_3
-            location = [(action - 162) // 9, (action - 162) % 9]
+        block, location = self.action_to_blk_pos(action)
 
         # board와 block 비교
-        for row in range(0, 5):
-            for col in range(0, 5):
-                # 5*5에 block이 존재할 때
+        for row in range(0, BLOCK_LENGTH):
+            for col in range(0, BLOCK_LENGTH):
+                # Condition for block position in block array
                 if block[row][col] == 1:
-                    # location - 2 : 놓을 위치가 차지하는 5x5 중 (0,0)=(왼쪽위)
-                    # board 위에 존재하지 않을 때
+                    # location - 2 : leftmost top (0, 0)
+                    # When the block is located outside the board
                     if not (0 <= (location[0] - 2 + row) < 9 and 0 <= (location[1] - 2 + col) < 9):
                         return False
 
-                    # board 위에 존재하지만 block이 있을 때
+                    # When there is already another block
                     if self._board[location[0] - 2 + row][location[1] - 2 + col] == 1:
                         return False
 
@@ -179,7 +161,7 @@ class WoodokuEnv(gym.Env):
 
     # If there is a block to destroy, destroy it and get the corresponding reward.
     def _crash_block(self, action) -> int:
-
+        # combo : Number of broken blocks in one action
         combo = 0
         dup_check = np.zeros((9, 9))
         rows = []
@@ -264,18 +246,14 @@ class WoodokuEnv(gym.Env):
                 col.append(c)
         return (row[0], row[-1], col[0], col[-1])
 
-    # c_loc : where the center of the block is placed
     def place_block(self, action):
+        # c_loc : where the center of the block is placed
         block, c_loc = self.action_to_blk_pos(action)
         r1, r2, c1, c2 = self.get_block_square(block)
         self._board[c_loc[0]+r1-2:c_loc[0]+r2-1, c_loc[1]+c1 - 2: c_loc[1]+c2-1] \
             += block[r1:r2+1, c1:c2+1]
 
     def step(self, action):
-        """
-        https://www.gymlibrary.dev/api/core/#gym.Env.step
-        return (observation, reward, terminated, truncated, info)
-        """
         err_msg = f"{action!r} ({type(action)}) invalid"
         assert self.action_space.contains(action), err_msg
 
@@ -317,6 +295,10 @@ class WoodokuEnv(gym.Env):
     def block_exist(self):
         return self._block_exist
 
+    @property
+    def get_score(self):
+        return self.score
+
     def render(self):
         if self.render_mode == 'ansi':
             display_height = 17
@@ -324,9 +306,9 @@ class WoodokuEnv(gym.Env):
             display_score_top = 1
 
             new_board = np.where(self._board == 1, '■', '□')
-            new__block_1 = np.where(self._block_1 == 1, '■', '□')
-            new__block_2 = np.where(self._block_2 == 1, '■', '□')
-            new__block_3 = np.where(self._block_3 == 1, '■', '□')
+            new_block_1 = np.where(self._block_1 == 1, '■', '□')
+            new_block_2 = np.where(self._block_2 == 1, '■', '□')
+            new_block_3 = np.where(self._block_3 == 1, '■', '□')
 
             game_display = np.full(
                 (display_height, display_width), ' ', dtype='<U1')
@@ -335,7 +317,7 @@ class WoodokuEnv(gym.Env):
             game_display[1:10, 1:10] = new_board
 
             # copy block
-            for i, block in enumerate([new__block_1, new__block_2, new__block_3]):
+            for i, block in enumerate([new_block_1, new_block_2, new_block_3]):
                 game_display[11:16, 7*i+1:7*i+6] = block
 
             # create score_board
