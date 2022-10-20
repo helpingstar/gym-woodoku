@@ -88,7 +88,7 @@ class WoodokuEnv(gym.Env):
         self.straight = 0
 
         # score
-        self.score = 0
+        self._score = 0
 
         return observation, info
 
@@ -273,7 +273,7 @@ class WoodokuEnv(gym.Env):
 
         # If there is a block to destroy, destroy it and get the corresponding reward.
         reward = self._crash_block(action)
-        self.score += reward
+        self._score += reward
 
         # make block zero and _block_exist to False
         self._nonexist_block(action)
@@ -297,7 +297,7 @@ class WoodokuEnv(gym.Env):
 
     @property
     def score(self):
-        return self.score
+        return self._score
 
     def render(self):
         if self.render_mode == 'ansi':
@@ -328,7 +328,7 @@ class WoodokuEnv(gym.Env):
             game_display[display_score_top+3,
                          11:20] = np.array(list('├'+'─'*7+'┤'))
             game_display[display_score_top+4,
-                         11:20] = np.array(list(f'│{self.score:07d}│'))
+                         11:20] = np.array(list(f'│{self._score:07d}│'))
             game_display[display_score_top+5,
                          11:20] = np.array(list('└'+'─'*7+'┘'))
 
