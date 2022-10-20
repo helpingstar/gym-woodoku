@@ -16,7 +16,7 @@ class WoodokuEnv(gym.Env):
     metadata = {"game_modes": ['woodoku'],
                 "obs_modes": ['divided', 'total_square'],
                 "reward_modes": ['one', 'woodoku'],
-                "render_modes": ['ansi', 'plot', 'pygame'],
+                "render_modes": ['ansi', 'rgb_array', 'pygame'],
                 "render_fps": 1}
 
     def __init__(self, game_mode='woodoku', obs_mode='total_square', reward_mode='woodoku', render_mode='ansi', crash33=True):
@@ -296,7 +296,7 @@ class WoodokuEnv(gym.Env):
         return self._block_exist
 
     @property
-    def get_score(self):
+    def score(self):
         return self.score
 
     def render(self):
@@ -335,6 +335,13 @@ class WoodokuEnv(gym.Env):
             # Display game_display
             for i in range(display_height):
                 print(self._line_printer(game_display[i])[1:-1])
+        elif self.render_mode == 'rgb_array':
+            # // TODO make rgb_array render_mode by Pygame
+            block_size = 20
+            line_thickness = 5
+            padding = 10
+            score_board_height = 30
+            score_board_width = 120
 
     def close(self):
         pass
