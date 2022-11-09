@@ -44,18 +44,15 @@ class WoodokuEnv(gym.Env):
         if self.obs_mode == 'divided':
             self.observation_space = spaces.Dict(
                 {
-                    "board": spaces.MultiBinary([9, 9]),
-                    "block_1": spaces.MultiBinary([5, 5]),
-                    "block_2": spaces.MultiBinary([5, 5]),
-                    "block_3": spaces.MultiBinary([5, 5])
+                    "board": spaces.MultiBinary([9, 9, 1]),
+                    "block_1": spaces.MultiBinary([5, 5, 1]),
+                    "block_2": spaces.MultiBinary([5, 5, 1]),
+                    "block_3": spaces.MultiBinary([5, 5, 1])
                 }
             )
         elif self.obs_mode == 'total_square':
-            self.observation_space = spaces.Dict(
-                {
-                    "total_square": spaces.MultiBinary([15, 15])
-                }
-            )
+            self.observation_space = spaces.MultiBinary(
+                [15, 15, 1])
 
         # action_space : (Block X Width X Height)
         self.action_space = spaces.Discrete(243)
@@ -100,19 +97,19 @@ class WoodokuEnv(gym.Env):
     def _get_obs(self):
         if self.obs_mode == 'divided':
             return {
-                "board": self._board,
-                "block_1": self._block_1,
-                "block_2": self._block_2,
-                "block_3": self._block_3
+                "board": self._board.reshape(5, 5, 1),
+                "block_1": self._block_1.reshape(5, 5, 1),
+                "block_2": self._block_2.reshape(5, 5, 1),
+                "block_3": self._block_3.reshape(5, 5, 1)
             }
         elif self.obs_mode == 'total_square':
             # Four states are combined into one 15x15 array as states   for deep learning.
-            comb_state = np.zeros((15, 15))
+            comb_state = np.zeros((15, 15), dtype=np.uint8)
             comb_state[0:9, 3:12] = self._board
             comb_state[10:15, 0:5] = self._block_1
             comb_state[10:15, 5:10] = self._block_2
             comb_state[10:15, 10:15] = self._block_3
-            return {'total_square': comb_state}
+            return comb_state.reshape(15, 15, 1)
 
     def _get_info(self):
         return {}
