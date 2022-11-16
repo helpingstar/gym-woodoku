@@ -36,13 +36,15 @@ for i in range(1000):
 
 9 X 9 `numpy.array`, `dtype=uint8`
 
-// TODO: picture
+<img src = "https://user-images.githubusercontent.com/76930260/202095781-ca987cc9-0233-4aa6-a754-e81ad35b1587.png" width = "200" height = "200"/>
+
+
 
 ### `block`
 
 5 X 5 `numpy.array`, `dtype=uint8`
 
-// TODO: picture
+<image src = "https://user-images.githubusercontent.com/76930260/202096150-8d654bf0-ba08-428e-9367-760eff35756c.png" height = "100" weight = "100"/>
 
 **Location of Blocks in Array :**
 
@@ -54,7 +56,9 @@ Each point is placed at the index `(2,2)` of the size array `(5,5)`. (zero based
 
 **example)**
 
-// TODO
+<image src = "https://user-images.githubusercontent.com/76930260/202097501-704866dc-927e-490a-9664-e2397c46dc93.png" height = "100" weight = "100"/>
+<image src = "https://user-images.githubusercontent.com/76930260/202097633-e8438eba-d080-421b-8786-b081962e9c13.png" height = "100" weight = "100"/>
+
 
 ## `action`
 Integers ranging from 0 to 242
