@@ -20,12 +20,14 @@ pip install -e .
 import gym_woodoku
 import gym
 
-env = gym.make('gym_woodoku/Woodoku-v0', game_mode='woodoku')
+env = gym.make('gym_woodoku/Woodoku-v0', game_mode='woodoku', render_mode='human')
+# env = gym.wrappers.RecordVideo(env, video_folder='./video_folder')
+
 observation, info = env.reset()
-env.render()
-for i in range(1000):
-    env.step(env.action_space.sample())
-    env.render()
+for i in range(100000):
+    obs, reward, terminated, _, info = env.step(env.action_space.sample())
+    if terminated:
+        env.reset()
 ```
 
 # environment
@@ -90,5 +92,5 @@ Determine the scoring method.
 ### `render_modes`
 Determines gym rendering method.
 * `console` : The game screen appears on the console.
-* `plot` : // TODO
-* `pygame` :  Render through the pygame library.
+* `human` : continuously rendered in the current display
+* `rgb_array` : return a single frame representing the current state of the environment. Use with RecordVideo Wrapper if you want to save episodes.

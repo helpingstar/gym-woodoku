@@ -1,5 +1,5 @@
 import gym
-# import pygame
+import pygame
 import numpy as np
 from gym import spaces
 from .blocks import blocks
@@ -9,17 +9,19 @@ MAX_BLOCK_NUM = 3
 BLOCK_LENGTH = 5
 BOARD_LENGTH = 9
 
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+
 
 class WoodokuEnv(gym.Env):
 
-    # TODO what is render_fps
     metadata = {"game_modes": ['woodoku'],
                 "obs_modes": ['divided', 'total_square'],
                 "reward_modes": ['one', 'woodoku'],
-                "render_modes": ['ansi', 'rgb_array', 'pygame'],
-                "render_fps": 1}
+                "render_modes": ['ansi', 'rgb_array', 'human'],
+                "render_fps": 60}
 
-    def __init__(self, game_mode='woodoku', obs_mode='total_square', reward_mode='woodoku', render_mode='ansi', crash33=True):
+    def __init__(self, game_mode='woodoku', obs_mode='total_square', reward_mode='woodoku', render_mode='human', crash33=True):
 
         # ASSERT
         err_msg = f"{game_mode} is not in {self.metadata['game_modes']}"
@@ -60,6 +62,30 @@ class WoodokuEnv(gym.Env):
         # get kind of blocks by `game_mode`
         self._block_list = blocks[game_mode]
 
+        # render
+        self.window = None
+        self.clock = None
+
+        self.window_size = 512  # The size of the PyGame window
+        self.board_square_size = 30
+        self.board_square_line_size = 5
+
+        self.block_square_size = 18
+        self.block_square_line_size = 4
+
+        self.board_total_size = self.board_square_size * \
+            9 + self.board_square_line_size * 8
+        self.block_total_size = self.block_square_size * \
+            5 + self.block_square_line_size * 4
+
+        self.board_left_margin = (
+            self.window_size - self.board_total_size) // 2
+        self.block_left_margin = (
+            self.window_size - self.block_total_size*3) // 4
+
+        self.top_margin = (
+            self.window_size - self.board_total_size - self.block_total_size) // 3
+
     def _get_3_blocks(self) -> tuple:
         a = random.sample(range(self._block_list.shape[0]), 3)
         return self._block_list[a[0]].copy(), self._block_list[a[1]].copy(), self._block_list[a[2]].copy()
@@ -67,6 +93,8 @@ class WoodokuEnv(gym.Env):
     def reset(self, seed=None, options=None):
         # reset seed
         super().reset(seed=seed)
+
+        self.step_count = 0
 
         # make board clean
         self._board = np.zeros((9, 9))
@@ -86,6 +114,9 @@ class WoodokuEnv(gym.Env):
 
         # score
         self._score = 0
+
+        if self.render_mode == "human":
+            self._render_frame()
 
         return observation, info
 
@@ -259,11 +290,15 @@ class WoodokuEnv(gym.Env):
         # Checks whether there is a block corresponding to the action,
         #   and returns if there is not.
         if not self._is_valid_block(action):
+            if self.render_mode == "human":
+                self._render_frame()
             return (self._get_obs(), 0, terminated, False, self._get_info())
 
         # Check if the block can be placed at the location corresponding to the action.
         #   Return if not possible.
         if not self._is_valid_position(action):
+            if self.render_mode == "human":
+                self._render_frame()
             return (self._get_obs(), 0, terminated, False, self._get_info())
 
         self.place_block(action)
@@ -282,6 +317,9 @@ class WoodokuEnv(gym.Env):
 
         # Check if the game is terminated.
         terminated = self._is_terminated()
+
+        if self.render_mode == "human":
+            self._render_frame()
 
         return self._get_obs(), reward, terminated, False, self._get_info()
 
@@ -332,13 +370,71 @@ class WoodokuEnv(gym.Env):
             # Display game_display
             for i in range(display_height):
                 print(self._line_printer(game_display[i])[1:-1])
-        elif self.render_mode == 'rgb_array':
-            # // TODO make rgb_array render_mode by Pygame
-            block_size = 20
-            line_thickness = 5
-            padding = 10
-            score_board_height = 30
-            score_board_width = 120
+        elif self.render_mode == "rgb_array":
+            return self._render_frame()
+
+    def _render_frame(self):
+        pygame.init()
+        if self.window is None and self.render_mode == "human":
+            pygame.display.init()
+            self.window = pygame.display.set_mode(
+                (self.window_size, self.window_size))
+        if self.clock is None and self.render_mode == "human":
+            self.clock = pygame.time.Clock()
+
+        canvas = pygame.Surface((self.window_size, self.window_size))
+        canvas.fill((255, 255, 255))
+
+        board_margin = np.array([self.board_left_margin, self.top_margin])
+        board_square_chunk = self.board_square_size + self.board_square_line_size
+        for r in range(9):
+            for c in range(9):
+                if self._board[r][c] == 1:
+                    pygame.draw.rect(
+                        canvas,
+                        BLACK,
+                        pygame.Rect(
+                            board_margin
+                            + np.array([board_square_chunk*r,
+                                       board_square_chunk*c]),  # pos
+                            (self.board_square_size, self.board_square_size)
+                        )
+                    )
+        block_square_chunk = self.block_square_size+self.block_square_line_size
+        for idx, block in enumerate([self._block_1, self._block_2, self._block_3]):
+            block_margin = np.array([self.block_left_margin +
+                                     (self.block_left_margin +
+                                      self.block_total_size)*idx,
+                                     self.window_size-self.top_margin-self.block_total_size])
+            for r in range(5):
+                for c in range(5):
+                    if block[r][c] == 1:
+                        pygame.draw.rect(
+                            canvas,
+                            BLACK,
+                            pygame.Rect(
+                                block_margin+np.array([block_square_chunk * r,
+                                                       block_square_chunk*c]),  # pos
+                                (self.block_square_size, self.block_square_size)
+                            )
+                        )
+
+        myFont = pygame.font.SysFont(None, 20)
+        num = myFont.render(str(self.step_count), True, (0, 0, 0))
+        canvas.blit(num, (0, 0))
+        self.step_count += 1
+
+        if self.render_mode == "human":
+            self.window.blit(canvas, canvas.get_rect())
+            pygame.event.pump()
+            pygame.display.update()
+            self.clock.tick(self.metadata["render_fps"])
+        else:  # rgb_array
+            return np.transpose(
+                np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
+            )
 
     def close(self):
-        pass
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()
