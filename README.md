@@ -12,6 +12,8 @@ pip install -e .
 !git clone https://github.com/helpingstar/gym-woodoku.git
 %cd gym-woodoku
 !pip install -e .
+!pip install -r requirements.txt
+%cd ..
 ```
 
 # Usage
@@ -28,6 +30,7 @@ for i in range(100000):
     obs, reward, terminated, _, info = env.step(env.action_space.sample())
     if terminated:
         env.reset()
+env.close()
 ```
 
 # environment

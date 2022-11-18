@@ -14,14 +14,14 @@ BLACK = (0, 0, 0)
 
 
 class WoodokuEnv(gym.Env):
-
+    # TODO : info에 score return
     metadata = {"game_modes": ['woodoku'],
                 "obs_modes": ['divided', 'total_square'],
                 "reward_modes": ['one', 'woodoku'],
                 "render_modes": ['ansi', 'rgb_array', 'human'],
                 "render_fps": 60}
 
-    def __init__(self, game_mode='woodoku', obs_mode='total_square', reward_mode='woodoku', render_mode='human', crash33=True):
+    def __init__(self, game_mode='woodoku', obs_mode='total_square', reward_mode='woodoku', render_mode=None, crash33=True):
 
         # ASSERT
         err_msg = f"{game_mode} is not in {self.metadata['game_modes']}"
