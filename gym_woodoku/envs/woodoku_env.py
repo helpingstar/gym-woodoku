@@ -11,6 +11,7 @@ BOARD_LENGTH = 9
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+GRAY = (128, 128, 128)
 
 
 class WoodokuEnv(gym.Env):
@@ -21,7 +22,12 @@ class WoodokuEnv(gym.Env):
                 "render_modes": ['ansi', 'rgb_array', 'human'],
                 "render_fps": 60}
 
-    def __init__(self, game_mode='woodoku', obs_mode='total_square', reward_mode='woodoku', render_mode=None, crash33=True):
+    def __init__(self,
+                 game_mode='woodoku',
+                 obs_mode='total_square',
+                 reward_mode='woodoku',
+                 render_mode=None,
+                 crash33=True):
 
         # ASSERT
         err_msg = f"{game_mode} is not in {self.metadata['game_modes']}"
@@ -67,16 +73,12 @@ class WoodokuEnv(gym.Env):
         self.clock = None
 
         self.window_size = 512  # The size of the PyGame window
-        self.board_square_size = 30
-        self.board_square_line_size = 5
+        self.board_square_size = 32
 
-        self.block_square_size = 18
-        self.block_square_line_size = 4
+        self.block_square_size = 24
 
-        self.board_total_size = self.board_square_size * \
-            9 + self.board_square_line_size * 8
-        self.block_total_size = self.block_square_size * \
-            5 + self.block_square_line_size * 4
+        self.board_total_size = self.board_square_size * 9
+        self.block_total_size = self.block_square_size * 5
 
         self.board_left_margin = (
             self.window_size - self.board_total_size) // 2
@@ -88,7 +90,10 @@ class WoodokuEnv(gym.Env):
 
     def _get_3_blocks(self) -> tuple:
         a = random.sample(range(self._block_list.shape[0]), 3)
-        return self._block_list[a[0]].copy(), self._block_list[a[1]].copy(), self._block_list[a[2]].copy()
+        return (self._block_list[a[0]].copy(),
+                self._block_list[a[1]].copy(),
+                self._block_list[a[2]].copy()
+                )
 
     def reset(self, seed=None, options=None):
         # reset seed
@@ -134,7 +139,7 @@ class WoodokuEnv(gym.Env):
                 "block_3": self._block_3.reshape(5, 5, 1)
             }
         elif self.obs_mode == 'total_square':
-            # Four states are combined into one 15x15 array as states   for deep learning.
+            # Four states are combined into one 15x15 array as states for deep learning.
             comb_state = np.zeros((15, 15), dtype=np.uint8)
             comb_state[0:9, 3:12] = self._board
             comb_state[10:15, 0:5] = self._block_1
@@ -383,41 +388,63 @@ class WoodokuEnv(gym.Env):
             self.clock = pygame.time.Clock()
 
         canvas = pygame.Surface((self.window_size, self.window_size))
-        canvas.fill((255, 255, 255))
+        canvas.fill(WHITE)
 
+        # draw board square
         board_margin = np.array([self.board_left_margin, self.top_margin])
-        board_square_chunk = self.board_square_size + self.board_square_line_size
-        for r in range(9):
-            for c in range(9):
+        for r in range(BOARD_LENGTH):
+            for c in range(BOARD_LENGTH):
+                board_square_start_pos = board_margin + \
+                    np.array([self.board_square_size*r,
+                             self.board_square_size*c])
+
                 if self._board[r][c] == 1:
                     pygame.draw.rect(
                         canvas,
                         BLACK,
                         pygame.Rect(
-                            board_margin
-                            + np.array([board_square_chunk*r,
-                                       board_square_chunk*c]),  # pos
+                            board_square_start_pos,  # pos
                             (self.board_square_size, self.board_square_size)
                         )
                     )
-        block_square_chunk = self.block_square_size+self.block_square_line_size
+                pygame.draw.rect(
+                    canvas,
+                    GRAY,
+                    pygame.Rect(
+                        board_square_start_pos,  # pos
+                        (self.board_square_size, self.board_square_size)
+                    ),
+                    2
+                )
+
+        # draw block square
         for idx, block in enumerate([self._block_1, self._block_2, self._block_3]):
             block_margin = np.array([self.block_left_margin +
                                      (self.block_left_margin +
                                       self.block_total_size)*idx,
                                      self.window_size-self.top_margin-self.block_total_size])
-            for r in range(5):
-                for c in range(5):
+            for r in range(BLOCK_LENGTH):
+                for c in range(BLOCK_LENGTH):
+                    block_square_start_pos = block_margin+np.array([self.block_square_size * r,
+                                                                    self.block_square_size*c])
                     if block[r][c] == 1:
                         pygame.draw.rect(
                             canvas,
                             BLACK,
                             pygame.Rect(
-                                block_margin+np.array([block_square_chunk * r,
-                                                       block_square_chunk*c]),  # pos
+                                block_square_start_pos,  # pos
                                 (self.block_square_size, self.block_square_size)
                             )
                         )
+                    pygame.draw.rect(
+                        canvas,
+                        GRAY,
+                        pygame.Rect(
+                            block_square_start_pos,  # pos
+                            (self.block_square_size, self.block_square_size)
+                        ),
+                        2
+                    )
 
         myFont = pygame.font.SysFont(None, 20)
         num = myFont.render(str(self.step_count), True, (0, 0, 0))

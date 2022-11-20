@@ -84,7 +84,7 @@ Gets the type of block to use in the game.
 Decide how to obtain the observation.
 
 * `divided` : 1 board and 3 blocks
-  * `{"board": (9 X 9), block_(1/2/3): (5 X 5)}`
+  * {`"board"`: (9 X 9), `"block_(1/2/3)"`: (5 X 5)}
 * `total_square` : (15 X 15)
 
 ### `reward_modes`
