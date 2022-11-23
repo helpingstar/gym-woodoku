@@ -4,6 +4,7 @@
 git clone https://github.com/helpingstar/gym-woodoku.git
 cd gym-woodoku
 pip install -e .
+pip install -r requirements.txt
 ```
 
 ## Colab

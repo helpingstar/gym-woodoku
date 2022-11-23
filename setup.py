@@ -5,6 +5,7 @@ setup(name="gym_woodoku",
       install_requires=[
           "gym>=0.26.0",
           "pygame>=2.1.0",
-          "moviepy>=1.0.3"
+          "moviepy>=1.0.3",
+          "numpy>=1.22.3"
       ]
       )
