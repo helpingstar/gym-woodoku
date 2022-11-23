@@ -1,3 +1,7 @@
+# Welcome to gym-woodoku!
+
+![woodoku_ex_video](https://user-images.githubusercontent.com/54899900/202888885-bd8d18eb-68aa-4dd0-963e-61f311716296.gif)
+
 # Installation
 
 ```bash
@@ -65,15 +69,27 @@ Each point is placed at the index `(2,2)` of the size array `(5,5)`. (zero based
 <image src = "https://user-images.githubusercontent.com/76930260/202097501-704866dc-927e-490a-9664-e2397c46dc93.png" height = "100" weight = "100"/>         <image src = "https://user-images.githubusercontent.com/76930260/202097633-e8438eba-d080-421b-8786-b081962e9c13.png" height = "100" weight = "100"/>
 
 
-## `action`
-Integers ranging from 0 to 242
+## action
+
+`action_space` : `Discrete(243)`
 
 * 0~80 : use `block_1`
-  * Place `block_1` at (`action`-0 // 9, `action`-0 % 9)
+  * Place `block_1` at ((action-0) // 9, (action-0) % 9)
 * 81~161 : use `block_2`
-  * Place `block_2` at (`action`-81 // 9, `action`-81 % 9)
+  * Place `block_2` at ((action-81) // 9, (action-81) % 9)
 * 162~242 : use `block_3`
-  * Place `block_3` at (`action`-162 // 9, `action`-162 % 9)
+  * Place `block_3` at ((action-162) // 9, (action-162) % 9)
+
+**example**
+1. `action == 0`
+    * Take `block_1` and place it at position `(0, 0)` based on the center of the block.
+
+<img src="https://user-images.githubusercontent.com/54899900/202887249-b4ed5f56-5bd7-4c4e-a0c3-b20132d417d2.jpg" width="150" height="150"/>
+
+2. `action == 212`
+    * Take `block_3` and place it at position `(5, 5)` based on the center of the block.
+    
+<img src="https://user-images.githubusercontent.com/54899900/202888125-affd44e6-d2ef-4103-a336-d2402366386a.jpg" width="150" height="150"/>
 
 ## `metadata`
 
@@ -85,13 +101,22 @@ Gets the type of block to use in the game.
 Decide how to obtain the observation.
 
 * `divided` : 1 board and 3 blocks
-  * {`"board"`: (9 X 9), `"block_(1/2/3)"`: (5 X 5)}
-* `total_square` : (15 X 15)
+  * `observation_space` : `Dict({"board": MultiBinary([9, 9]), "block_(1/2/3)": MultiBinary([5, 5])})`
+* `total_square`
+  * `observation_space` : `MultiBinary([15, 15, 1])`
+
+<img src="https://user-images.githubusercontent.com/54899900/202887172-c62ad9ee-673c-41dc-9b68-e00d32cf8854.jpg" width="250" height="250"/>
 
 ### `reward_modes`
 Determine the scoring method.
 * `one` : Get a reward of 1 for each block destroyed.
+  * 1 + combo + straight
 * `woodoku` : Follow Woodoku's scoring system.
+  * 28 * combo + 10 * straight + (number of square) - 20
+
+combo : Number of broken pieces at once
+
+straight : broken turns in a row
 
 ### `render_modes`
 Determines gym rendering method.
