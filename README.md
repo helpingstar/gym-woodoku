@@ -7,8 +7,8 @@
 ```bash
 git clone https://github.com/helpingstar/gym-woodoku.git
 cd gym-woodoku
-pip install -e .
 pip install -r requirements.txt
+pip install -e .
 ```
 
 ## Colab
@@ -16,9 +16,8 @@ pip install -r requirements.txt
 ```bash
 !git clone https://github.com/helpingstar/gym-woodoku.git
 %cd gym-woodoku
-!pip install -e .
 !pip install -r requirements.txt
-%cd ..
+!pip install -e .
 ```
 
 # Usage
@@ -32,7 +31,8 @@ env = gym.make('gym_woodoku/Woodoku-v0', game_mode='woodoku', render_mode='human
 
 observation, info = env.reset()
 for i in range(100000):
-    obs, reward, terminated, _, info = env.step(env.action_space.sample())
+    action = env.action_space.sample()
+    obs, reward, terminated, _, info = env.step(action)
     if terminated:
         env.reset()
 env.close()
@@ -88,7 +88,7 @@ Each point is placed at the index `(2,2)` of the size array `(5,5)`. (zero based
 
 2. `action == 212`
     * Take `block_3` and place it at position `(5, 5)` based on the center of the block.
-    
+
 <img src="https://user-images.githubusercontent.com/54899900/202888125-affd44e6-d2ef-4103-a336-d2402366386a.jpg" width="150" height="150"/>
 
 ## `metadata`
