@@ -120,6 +120,6 @@ straight : broken turns in a row
 
 ### `render_modes`
 Determines gym rendering method.
-* `console` : The game screen appears on the console.
+* `ansi` : The game screen appears on the console.
 * `human` : continuously rendered in the current display
 * `rgb_array` : return a single frame representing the current state of the environment. Use with RecordVideo Wrapper if you want to save episodes.
