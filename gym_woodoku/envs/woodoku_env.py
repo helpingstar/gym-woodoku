@@ -69,24 +69,12 @@ class WoodokuEnv(gym.Env):
         self._block_list = blocks[game_mode]
 
         # render
+
         self.window = None
         self.clock = None
 
         self.window_size = 512  # The size of the PyGame window
-        self.board_square_size = 32
-
-        self.block_square_size = 24
-
-        self.board_total_size = self.board_square_size * 9
-        self.block_total_size = self.block_square_size * 5
-
-        self.board_left_margin = (
-            self.window_size - self.board_total_size) // 2
-        self.block_left_margin = (
-            self.window_size - self.block_total_size*3) // 4
-
-        self.top_margin = (
-            self.window_size - self.board_total_size - self.block_total_size) // 3
+        
 
     def _get_3_blocks(self) -> tuple:
         a = random.sample(range(self._block_list.shape[0]), 3)
@@ -379,13 +367,35 @@ class WoodokuEnv(gym.Env):
             return self._render_frame()
 
     def _render_frame(self):
-        pygame.init()
-        if self.window is None and self.render_mode == "human":
-            pygame.display.init()
-            self.window = pygame.display.set_mode(
-                (self.window_size, self.window_size))
+        pygame.font.init()
+        if self.window is None:
+            pygame.init()
+            # render
+            self.board_square_size = 32
+            self.block_square_size = 24
+    
+            self.board_total_size = self.board_square_size * 9
+            self.block_total_size = self.block_square_size * 5
+    
+            self.board_left_margin = (
+                self.window_size - self.board_total_size) // 2
+            self.block_left_margin = (
+                self.window_size - self.block_total_size*3) // 4
+    
+            self.top_margin = (
+                self.window_size - self.board_total_size - self.block_total_size) // 3
+            if self.render_mode == "human":
+                pygame.display.init()
+                self.window = pygame.display.set_mode(
+                    (self.window_size, self.window_size)
+                )
+            else:
+                self.window = pygame.Surface((self.window_size, self.window_size))
+
         if self.clock is None and self.render_mode == "human":
             self.clock = pygame.time.Clock()
+        
+        
 
         canvas = pygame.Surface((self.window_size, self.window_size))
         canvas.fill(WHITE)
