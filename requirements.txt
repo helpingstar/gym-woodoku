@@ -1,4 +1,2 @@
-gym>=0.26.2
-pygame==2.1.0
-moviepy>=1.0.3
-numpy>=1.18.0
+gymnasium
+pygame

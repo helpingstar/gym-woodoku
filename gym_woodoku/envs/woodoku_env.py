@@ -1,7 +1,7 @@
-import gym
+import gymnasium as gym
 import pygame
 import numpy as np
-from gym import spaces
+from gymnasium import spaces
 from .blocks import blocks
 import random
 
