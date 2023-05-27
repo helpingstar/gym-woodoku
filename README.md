@@ -24,7 +24,7 @@ pip install -e .
 
 ```python
 import gym_woodoku
-import gym
+import gymnasium as gym
 
 env = gym.make('gym_woodoku/Woodoku-v0', game_mode='woodoku', render_mode='human')
 # env = gym.wrappers.RecordVideo(env, video_folder='./video_folder')
