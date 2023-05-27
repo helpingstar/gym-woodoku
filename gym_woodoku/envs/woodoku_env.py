@@ -15,7 +15,6 @@ GRAY = (128, 128, 128)
 
 
 class WoodokuEnv(gym.Env):
-    # TODO : info에 score return
     metadata = {"game_modes": ['woodoku'],
                 "obs_modes": ['divided', 'total_square'],
                 "reward_modes": ['one', 'woodoku'],
@@ -74,7 +73,7 @@ class WoodokuEnv(gym.Env):
         self.clock = None
 
         self.window_size = 512  # The size of the PyGame window
-        
+
 
     def _get_3_blocks(self) -> tuple:
         a = random.sample(range(self._block_list.shape[0]), 3)
@@ -89,12 +88,19 @@ class WoodokuEnv(gym.Env):
 
         self.step_count = 0
 
+        # score
+        self._score = 0
+
         # make board clean
         self._board = np.zeros((9, 9))
 
         # get 3 blocks
         self._get_3_blocks_random()
         self._block_exist = [True, True, True]
+
+        # Whether a block can be placed in its place.
+        self.legality = np.full((243,), True)
+        self._get_legal_actions()
 
         # get observation and info
         observation = self._get_obs()
@@ -105,9 +111,6 @@ class WoodokuEnv(gym.Env):
         # (this is different from how many pieces are broken at once)
         self.straight = 0
 
-        # score
-        self._score = 0
-
         if self.render_mode == "human":
             self._render_frame()
 
@@ -117,6 +120,14 @@ class WoodokuEnv(gym.Env):
         # randomly select three blocks
         self._block_exist = [True, True, True]
         self._block_1, self._block_2, self._block_3 = self._get_3_blocks()
+
+    def _get_legal_actions(self):
+        """
+        Checks whether there is a block corresponding to the action
+        Check if the block can be placed at the location corresponding to the action.
+        """
+        for action in range(243):
+            self.legality[action] = self._is_valid_block(action) and self._is_valid_position(action)
 
     def _get_obs(self):
         if self.obs_mode == 'divided':
@@ -136,7 +147,7 @@ class WoodokuEnv(gym.Env):
             return comb_state.reshape(15, 15, 1)
 
     def _get_info(self):
-        return {}
+        return {'legality': self.legality, 'score': self._score}
 
     def _is_terminated(self) -> bool:
         # Check if the game can be continued with the blocks you own
@@ -280,16 +291,9 @@ class WoodokuEnv(gym.Env):
 
         terminated = False
 
-        # Checks whether there is a block corresponding to the action,
-        #   and returns if there is not.
-        if not self._is_valid_block(action):
-            if self.render_mode == "human":
-                self._render_frame()
-            return (self._get_obs(), 0, terminated, False, self._get_info())
+        self._get_legal_actions()
 
-        # Check if the block can be placed at the location corresponding to the action.
-        #   Return if not possible.
-        if not self._is_valid_position(action):
+        if not self.legality[action]:
             if self.render_mode == "human":
                 self._render_frame()
             return (self._get_obs(), 0, terminated, False, self._get_info())
@@ -318,14 +322,6 @@ class WoodokuEnv(gym.Env):
 
     def _line_printer(self, line: np.ndarray):
         return np.array2string(line, separator='', formatter={'str_kind': lambda x: x})
-
-    @property
-    def block_exist(self):
-        return self._block_exist
-
-    @property
-    def score(self):
-        return self._score
 
     def render(self):
         if self.render_mode == 'ansi':
@@ -373,15 +369,15 @@ class WoodokuEnv(gym.Env):
             # render
             self.board_square_size = 32
             self.block_square_size = 24
-    
+
             self.board_total_size = self.board_square_size * 9
             self.block_total_size = self.block_square_size * 5
-    
+
             self.board_left_margin = (
                 self.window_size - self.board_total_size) // 2
             self.block_left_margin = (
                 self.window_size - self.block_total_size*3) // 4
-    
+
             self.top_margin = (
                 self.window_size - self.board_total_size - self.block_total_size) // 3
             if self.render_mode == "human":
@@ -394,8 +390,6 @@ class WoodokuEnv(gym.Env):
 
         if self.clock is None and self.render_mode == "human":
             self.clock = pygame.time.Clock()
-        
-        
 
         canvas = pygame.Surface((self.window_size, self.window_size))
         canvas.fill(WHITE)
