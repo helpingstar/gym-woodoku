@@ -380,6 +380,27 @@ class WoodokuEnv(gym.Env):
 
             self.top_margin = (
                 self.window_size - self.board_total_size - self.block_total_size) // 3
+            
+            # Initialize the positions of the squares on the board.
+            self.board_row_pos = np.zeros(BOARD_LENGTH, dtype=np.uint32)
+            self.board_col_pos = np.zeros(BOARD_LENGTH, dtype=np.uint32)
+
+            for i in range(BOARD_LENGTH):
+                self.board_col_pos[i] = self.board_left_margin + self.board_square_size * i
+                self.board_row_pos[i] = self.top_margin + self.board_square_size * i
+
+            # Initializes the position of the square in the block.
+            self.block_row_pos = np.zeros(BLOCK_LENGTH, dtype=np.uint32)
+            self.block_col_pos = np.zeros((MAX_BLOCK_NUM, BLOCK_LENGTH), dtype=np.uint32)
+
+            for i in range(BLOCK_LENGTH):
+                self.block_row_pos[i] = self.window_size-self.top_margin-self.block_total_size + self.block_square_size * i
+            
+            for b in range(MAX_BLOCK_NUM):
+                for i in range(BLOCK_LENGTH):
+                    self.block_col_pos[b][i] = self.block_left_margin + (self.block_left_margin + self.block_total_size) * b + self.block_square_size * i
+
+
             if self.render_mode == "human":
                 pygame.display.init()
                 self.window = pygame.display.set_mode(
@@ -388,26 +409,21 @@ class WoodokuEnv(gym.Env):
             else:
                 self.window = pygame.Surface((self.window_size, self.window_size))
 
-        if self.clock is None and self.render_mode == "human":
+        if self.clock is None:
             self.clock = pygame.time.Clock()
 
         canvas = pygame.Surface((self.window_size, self.window_size))
         canvas.fill(WHITE)
 
         # draw board square
-        board_margin = np.array([self.board_left_margin, self.top_margin])
         for r in range(BOARD_LENGTH):
             for c in range(BOARD_LENGTH):
-                board_square_start_pos = board_margin + \
-                    np.array([self.board_square_size*r,
-                             self.board_square_size*c])
-
                 if self._board[r][c] == 1:
                     pygame.draw.rect(
                         canvas,
                         BLACK,
                         pygame.Rect(
-                            board_square_start_pos,  # pos
+                            (self.board_col_pos[c], self.board_row_pos[r]),  # pos
                             (self.board_square_size, self.board_square_size)
                         )
                     )
@@ -415,7 +431,7 @@ class WoodokuEnv(gym.Env):
                     canvas,
                     GRAY,
                     pygame.Rect(
-                        board_square_start_pos,  # pos
+                        (self.board_col_pos[c], self.board_row_pos[r]),  # pos
                         (self.board_square_size, self.board_square_size)
                     ),
                     2
@@ -423,20 +439,14 @@ class WoodokuEnv(gym.Env):
 
         # draw block square
         for idx, block in enumerate([self._block_1, self._block_2, self._block_3]):
-            block_margin = np.array([self.block_left_margin +
-                                     (self.block_left_margin +
-                                      self.block_total_size)*idx,
-                                     self.window_size-self.top_margin-self.block_total_size])
             for r in range(BLOCK_LENGTH):
                 for c in range(BLOCK_LENGTH):
-                    block_square_start_pos = block_margin+np.array([self.block_square_size * r,
-                                                                    self.block_square_size*c])
                     if block[r][c] == 1:
                         pygame.draw.rect(
                             canvas,
                             BLACK,
                             pygame.Rect(
-                                block_square_start_pos,  # pos
+                                (self.block_col_pos[idx][c], self.block_row_pos[r]),  # pos
                                 (self.block_square_size, self.block_square_size)
                             )
                         )
@@ -444,7 +454,7 @@ class WoodokuEnv(gym.Env):
                         canvas,
                         GRAY,
                         pygame.Rect(
-                            block_square_start_pos,  # pos
+                            (self.block_col_pos[idx][c], self.block_row_pos[r]),  # pos
                             (self.block_square_size, self.block_square_size)
                         ),
                         2
