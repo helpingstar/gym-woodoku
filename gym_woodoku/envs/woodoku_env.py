@@ -462,11 +462,13 @@ class WoodokuEnv(gym.Env):
                         2
                     )
 
-        myFont = pygame.font.SysFont(None, 20)
-        num = myFont.render(str(self.step_count), True, (0, 0, 0))
-        score = myFont.render(str(self._score), True, (0, 0, 0))
-        canvas.blit(num, (0, 0))
-        canvas.blit(score, (0, 20))
+        myFont = pygame.font.SysFont(None, 30)
+        num = myFont.render(f'step: {self.step_count}', True, (0, 0, 0))
+        score = myFont.render(f'score: {self._score}', True, (0, 0, 0))
+        straight = myFont.render(f'straight: {self.straight}', True, (0, 0, 0))
+        canvas.blit(score, (10, 5))
+        canvas.blit(num, (200, 5))
+        canvas.blit(straight, (340, 5))
         self.step_count += 1
 
         if self.render_mode == "human":
