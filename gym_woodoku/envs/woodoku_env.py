@@ -19,7 +19,7 @@ class WoodokuEnv(gym.Env):
                 "obs_modes": ['divided', 'total_square'],
                 "reward_modes": ['one', 'woodoku'],
                 "render_modes": ['ansi', 'rgb_array', 'human'],
-                "render_fps": 60}
+                "render_fps": 10}
 
     def __init__(self,
                  game_mode='woodoku',
@@ -74,7 +74,6 @@ class WoodokuEnv(gym.Env):
 
         self.window_size = 512  # The size of the PyGame window
 
-
     def _get_3_blocks(self) -> tuple:
         a = random.sample(range(self._block_list.shape[0]), 3)
         return (self._block_list[a[0]].copy(),
@@ -99,13 +98,11 @@ class WoodokuEnv(gym.Env):
         self._block_exist = [True, True, True]
 
         # Whether a block can be placed in its place.
-        self.legality = np.full((243,), True)
+        self.legality = np.zeros((243,), dtype=np.uint8)
         self._get_legal_actions()
 
         # get observation and info
         observation = self._get_obs()
-
-        info = self._get_info()
 
         # Shows how many pieces are broken in a row
         # (this is different from how many pieces are broken at once)
@@ -114,7 +111,7 @@ class WoodokuEnv(gym.Env):
         if self.render_mode == "human":
             self._render_frame()
 
-        return observation, info
+        return observation, self._get_info()
 
     def _get_3_blocks_random(self):
         # randomly select three blocks
@@ -127,7 +124,10 @@ class WoodokuEnv(gym.Env):
         Check if the block can be placed at the location corresponding to the action.
         """
         for action in range(243):
-            self.legality[action] = self._is_valid_block(action) and self._is_valid_position(action)
+            if self._is_valid_block(action) and self._is_valid_position(action):
+                self.legality[action] = 1
+            else:
+                self.legality[action] = 0
 
     def _get_obs(self):
         if self.obs_mode == 'divided':
@@ -147,7 +147,7 @@ class WoodokuEnv(gym.Env):
             return comb_state.reshape(15, 15, 1)
 
     def _get_info(self):
-        return {'legality': self.legality, 'score': self._score}
+        return {'action_mask': self.legality, 'score': self._score}
 
     def _is_terminated(self) -> bool:
         # Check if the game can be continued with the blocks you own
@@ -235,6 +235,8 @@ class WoodokuEnv(gym.Env):
         combo = len(rows) + len(cols) + len(square33)
         if combo > 0:
             self.straight += 1
+        else:
+            self.straight = 0
 
         if self.reward_mode == 'one':
             if combo == 0:
@@ -291,29 +293,28 @@ class WoodokuEnv(gym.Env):
 
         terminated = False
 
-        self._get_legal_actions()
-
         if not self.legality[action]:
-            if self.render_mode == "human":
-                self._render_frame()
-            return (self._get_obs(), 0, terminated, False, self._get_info())
+            reward = 0
+            terminated = False
+        else:
+            self.place_block(action)
 
-        self.place_block(action)
+            # If there is a block to destroy, destroy it and get the corresponding reward.
+            reward = self._crash_block(action)
+            self._score += reward
 
-        # If there is a block to destroy, destroy it and get the corresponding reward.
-        reward = self._crash_block(action)
-        self._score += reward
+            # make block zero and _block_exist to False
+            self._nonexist_block(action)
 
-        # make block zero and _block_exist to False
-        self._nonexist_block(action)
+            # Check if all 3 blocks have been used.
+            # If the block does not exist, a new block is obtained.
+            if sum(self._block_exist) == 0:
+                self._get_3_blocks_random()
 
-        # Check if all 3 blocks have been used.
-        # If the block does not exist, a new block is obtained.
-        if sum(self._block_exist) == 0:
-            self._get_3_blocks_random()
+            # Check if the game is terminated.
+            terminated = self._is_terminated()
 
-        # Check if the game is terminated.
-        terminated = self._is_terminated()
+            self._get_legal_actions()
 
         if self.render_mode == "human":
             self._render_frame()
@@ -325,42 +326,43 @@ class WoodokuEnv(gym.Env):
 
     def render(self):
         if self.render_mode == 'ansi':
-            display_height = 17
-            display_width = 21
-            display_score_top = 1
-
-            new_board = np.where(self._board == 1, '■', '□')
-            new_block_1 = np.where(self._block_1 == 1, '■', '□')
-            new_block_2 = np.where(self._block_2 == 1, '■', '□')
-            new_block_3 = np.where(self._block_3 == 1, '■', '□')
-
-            game_display = np.full(
-                (display_height, display_width), ' ', dtype='<U1')
-
-            # copy board
-            game_display[1:10, 1:10] = new_board
-
-            # copy block
-            for i, block in enumerate([new_block_1, new_block_2, new_block_3]):
-                game_display[11:16, 7*i+1:7*i+6] = block
-
-            # create score_board
-            game_display[display_score_top+1,
-                         11:20] = np.array(list('┌'+'─'*7+'┐'))
-            game_display[display_score_top+2,
-                         11:20] = np.array(list('│'+' SCORE '+'│'))
-            game_display[display_score_top+3,
-                         11:20] = np.array(list('├'+'─'*7+'┤'))
-            game_display[display_score_top+4,
-                         11:20] = np.array(list(f'│{self._score:07d}│'))
-            game_display[display_score_top+5,
-                         11:20] = np.array(list('└'+'─'*7+'┘'))
-
-            # Display game_display
-            for i in range(display_height):
-                print(self._line_printer(game_display[i])[1:-1])
+            self._render_ansi(self)
         elif self.render_mode == "rgb_array":
             return self._render_frame()
+
+    def _render_ansi(self):
+        display_height = 17
+        display_width = 21
+        display_score_top = 1
+        new_board = np.where(self._board == 1, '■', '□')
+        new_block_1 = np.where(self._block_1 == 1, '■', '□')
+        new_block_2 = np.where(self._block_2 == 1, '■', '□')
+        new_block_3 = np.where(self._block_3 == 1, '■', '□')
+        game_display = np.full(
+            (display_height, display_width), ' ', dtype='<U1')
+
+        # copy board
+        game_display[1:10, 1:10] = new_board
+
+        # copy block
+        for i, block in enumerate([new_block_1, new_block_2, new_block_3]):
+            game_display[11:16, 7*i+1:7*i+6] = block
+
+        # create score_board
+        game_display[display_score_top+1,
+                     11:20] = np.array(list('┌'+'─'*7+'┐'))
+        game_display[display_score_top+2,
+                     11:20] = np.array(list('│'+' SCORE '+'│'))
+        game_display[display_score_top+3,
+                     11:20] = np.array(list('├'+'─'*7+'┤'))
+        game_display[display_score_top+4,
+                     11:20] = np.array(list(f'│{self._score:07d}│'))
+        game_display[display_score_top+5,
+                     11:20] = np.array(list('└'+'─'*7+'┘'))
+
+        # Display game_display
+        for i in range(display_height):
+            print(self._line_printer(game_display[i])[1:-1])
 
     def _render_frame(self):
         pygame.font.init()
@@ -380,7 +382,7 @@ class WoodokuEnv(gym.Env):
 
             self.top_margin = (
                 self.window_size - self.board_total_size - self.block_total_size) // 3
-            
+
             # Initialize the positions of the squares on the board.
             self.board_row_pos = np.zeros(BOARD_LENGTH, dtype=np.uint32)
             self.board_col_pos = np.zeros(BOARD_LENGTH, dtype=np.uint32)
@@ -395,7 +397,7 @@ class WoodokuEnv(gym.Env):
 
             for i in range(BLOCK_LENGTH):
                 self.block_row_pos[i] = self.window_size-self.top_margin-self.block_total_size + self.block_square_size * i
-            
+
             for b in range(MAX_BLOCK_NUM):
                 for i in range(BLOCK_LENGTH):
                     self.block_col_pos[b][i] = self.block_left_margin + (self.block_left_margin + self.block_total_size) * b + self.block_square_size * i
@@ -462,7 +464,9 @@ class WoodokuEnv(gym.Env):
 
         myFont = pygame.font.SysFont(None, 20)
         num = myFont.render(str(self.step_count), True, (0, 0, 0))
+        score = myFont.render(str(self._score), True, (0, 0, 0))
         canvas.blit(num, (0, 0))
+        canvas.blit(score, (0, 20))
         self.step_count += 1
 
         if self.render_mode == "human":
