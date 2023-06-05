@@ -17,14 +17,12 @@ GRAY = (128, 128, 128)
 class WoodokuEnv(gym.Env):
     metadata = {"game_modes": ['woodoku'],
                 "obs_modes": ['divided', 'total_square'],
-                "reward_modes": ['one', 'woodoku'],
                 "render_modes": ['ansi', 'rgb_array', 'human'],
                 "render_fps": 10}
 
     def __init__(self,
                  game_mode='woodoku',
                  obs_mode='total_square',
-                 reward_mode='woodoku',
                  render_mode=None,
                  crash33=True):
 
@@ -36,10 +34,6 @@ class WoodokuEnv(gym.Env):
         err_msg = f"{obs_mode} is not in {self.metadata['obs_modes']}"
         assert obs_mode in self.metadata['obs_modes'], err_msg
         self.obs_mode = obs_mode
-
-        err_msg = f"{reward_mode} is not in {self.metadata['reward_modes']}"
-        assert reward_mode in self.metadata['reward_modes']
-        self.reward_mode = reward_mode
 
         err_msg = f"{render_mode} is not in {self.metadata['render_modes']}"
         assert render_mode is None or render_mode in self.metadata['render_modes'], err_msg
@@ -108,6 +102,11 @@ class WoodokuEnv(gym.Env):
         # (this is different from how many pieces are broken at once)
         self.straight = 0
 
+        # combo : Number of broken blocks in one action
+        self.combo = 0
+        self.is_legal = True
+        self.n_cell = 0
+
         if self.render_mode == "human":
             self._render_frame()
 
@@ -121,7 +120,7 @@ class WoodokuEnv(gym.Env):
     def _get_legal_actions(self):
         """
         Checks whether there is a block corresponding to the action
-        Check if the block can be placed at the location corresponding to the action.
+        Check if the block can be placed at the location.
         """
         for action in range(243):
             if self._is_valid_block(action) and self._is_valid_position(action):
@@ -147,7 +146,12 @@ class WoodokuEnv(gym.Env):
             return comb_state.reshape(15, 15, 1)
 
     def _get_info(self):
-        return {'action_mask': self.legality, 'score': self._score}
+        return {'action_mask': self.legality,
+                'score': self._score,
+                'straight': self.straight,
+                'combo': self.combo,
+                'is_legal': self.is_legal,
+                'n_cell': self.n_cell}
 
     def _is_terminated(self) -> bool:
         # Check if the game can be continued with the blocks you own
@@ -191,10 +195,8 @@ class WoodokuEnv(gym.Env):
         else:
             return False
 
-    # If there is a block to destroy, destroy it and get the corresponding reward.
+    # If there is a block to destroy, destroy it and get the reward.
     def _crash_block(self, action) -> int:
-        # combo : Number of broken blocks in one action
-        combo = 0
         dup_check = np.zeros((9, 9))
         rows = []
         cols = []
@@ -202,18 +204,20 @@ class WoodokuEnv(gym.Env):
 
         block, _ = self.action_to_blk_pos(action)
 
+        self.n_cell = block.sum()
+
         # check row
         for r in range(BOARD_LENGTH):
             if self._board[r, :].sum() == 9:
                 if dup_check[r, :].sum() != 9:
-                    combo += 1
+                    self.combo += 1
                     dup_check[r, :] = 1
                     rows.append(r)
         # check col
         for c in range(BOARD_LENGTH):
             if self._board[:, c].sum() == 9:
                 if dup_check[:, c].sum() != 9:
-                    combo += 1
+                    self.combo += 1
                     dup_check[:, c] = 1
                     cols.append(c)
         # check square33
@@ -221,7 +225,7 @@ class WoodokuEnv(gym.Env):
             for c in range(0, BOARD_LENGTH, 3):
                 if self._board[r:r+3, c:c+3].sum() == 9:
                     if dup_check[r:r+3, c:c+3].sum() != 9:
-                        combo += 1
+                        self.combo += 1
                         dup_check[r:r+3, c:c+3] = 1
                         square33.append((r, c))
 
@@ -232,22 +236,16 @@ class WoodokuEnv(gym.Env):
         for r, c in square33:
             self._board[r:r+3, c:c+3] = 0
 
-        combo = len(rows) + len(cols) + len(square33)
-        if combo > 0:
+        self.combo = len(rows) + len(cols) + len(square33)
+        if self.combo > 0:
             self.straight += 1
         else:
             self.straight = 0
 
-        if self.reward_mode == 'one':
-            if combo == 0:
-                return 1
-            else:
-                return 1 + combo + self.straight
-        elif self.reward_mode == 'woodoku':
-            if combo == 0:
-                return block.sum()
-            else:
-                return 28 * combo + 10 * self.straight + block.sum() - 20
+        if self.combo == 0:
+            return 0
+        else:
+            return 2 * self.combo + self.straight
 
     def action_to_blk_pos(self, action) -> tuple:
         # First Block
@@ -284,7 +282,7 @@ class WoodokuEnv(gym.Env):
         # c_loc : where the center of the block is placed
         block, c_loc = self.action_to_blk_pos(action)
         r1, r2, c1, c2 = self.get_block_square(block)
-        self._board[c_loc[0]+r1-2:c_loc[0]+r2-1, c_loc[1]+c1 - 2: c_loc[1]+c2-1] \
+        self._board[c_loc[0]+r1-2:c_loc[0]+r2-1, c_loc[1]+c1-2: c_loc[1]+c2-1] \
             += block[r1:r2+1, c1:c2+1]
 
     def step(self, action):
@@ -293,10 +291,15 @@ class WoodokuEnv(gym.Env):
 
         terminated = False
 
+        self.combo = 0
+        self.n_cell = 0
+
         if not self.legality[action]:
+            self.is_legal = False
             reward = 0
             terminated = False
         else:
+            self.is_legal = True
             self.place_block(action)
 
             # If there is a block to destroy, destroy it and get the corresponding reward.
@@ -322,7 +325,8 @@ class WoodokuEnv(gym.Env):
         return self._get_obs(), reward, terminated, False, self._get_info()
 
     def _line_printer(self, line: np.ndarray):
-        return np.array2string(line, separator='', formatter={'str_kind': lambda x: x})
+        return np.array2string(line, separator='',
+                               formatter={'str_kind': lambda x: x})
 
     def render(self):
         if self.render_mode == 'ansi':

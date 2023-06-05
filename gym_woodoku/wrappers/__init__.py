@@ -1,0 +1,2 @@
+from gym_woodoku.wrappers.terminate_illegal import TerminateIllegalWoodoku
+from gym_woodoku.wrappers.reward_mode import RewardMode
