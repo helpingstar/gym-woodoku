@@ -220,7 +220,7 @@ class WoodokuEnv(gym.Env):
             self.straight = 0
 
         if self.combo == 0:
-            return 0
+            return 1
         else:
             return 2 * self.combo + self.straight
 
@@ -353,36 +353,35 @@ class WoodokuEnv(gym.Env):
             self.board_square_size = 32
             self.block_square_size = 24
 
-            self.board_total_size = self.board_square_size * 9
-            self.block_total_size = self.block_square_size * 5
+            board_total_size = self.board_square_size * 9
+            block_total_size = self.block_square_size * 5
 
-            self.board_left_margin = (
-                self.window_size - self.board_total_size) // 2
-            self.block_left_margin = (
-                self.window_size - self.block_total_size*3) // 4
+            board_left_margin = (
+                self.window_size - board_total_size) // 2
+            block_left_margin = (
+                self.window_size - block_total_size*3) // 4
 
-            self.top_margin = (
-                self.window_size - self.board_total_size - self.block_total_size) // 3
+            top_margin = (
+                self.window_size - board_total_size - block_total_size) // 3
 
             # Initialize the positions of the squares on the board.
             self.board_row_pos = np.zeros(BOARD_LENGTH, dtype=np.uint32)
             self.board_col_pos = np.zeros(BOARD_LENGTH, dtype=np.uint32)
 
             for i in range(BOARD_LENGTH):
-                self.board_col_pos[i] = self.board_left_margin + self.board_square_size * i
-                self.board_row_pos[i] = self.top_margin + self.board_square_size * i
+                self.board_col_pos[i] = board_left_margin + self.board_square_size * i
+                self.board_row_pos[i] = top_margin + self.board_square_size * i
 
             # Initializes the position of the square in the block.
             self.block_row_pos = np.zeros(BLOCK_LENGTH, dtype=np.uint32)
             self.block_col_pos = np.zeros((MAX_BLOCK_NUM, BLOCK_LENGTH), dtype=np.uint32)
 
             for i in range(BLOCK_LENGTH):
-                self.block_row_pos[i] = self.window_size-self.top_margin-self.block_total_size + self.block_square_size * i
+                self.block_row_pos[i] = self.window_size-top_margin-block_total_size + self.block_square_size * i
 
             for b in range(MAX_BLOCK_NUM):
                 for i in range(BLOCK_LENGTH):
-                    self.block_col_pos[b][i] = self.block_left_margin + (self.block_left_margin + self.block_total_size) * b + self.block_square_size * i
-
+                    self.block_col_pos[b][i] = block_left_margin + (block_left_margin + block_total_size) * b + self.block_square_size * i
 
             if self.render_mode == "human":
                 pygame.display.init()
