@@ -3,7 +3,6 @@ import pygame
 import numpy as np
 from gymnasium.spaces import Box, Dict, Discrete
 from .blocks import blocks
-import random
 
 MAX_BLOCK_NUM = 3
 BLOCK_LENGTH = 5
@@ -58,7 +57,7 @@ class WoodokuEnv(gym.Env):
         self.window_size = 512  # The size of the PyGame window
 
     def _get_3_blocks(self) -> tuple:
-        a = random.sample(range(self._block_list.shape[0]), 3)
+        a = self.np_random.choice(range(self._block_list.shape[0]), 3, replace=False)
         return (self._block_list[a[0]].copy(),
                 self._block_list[a[1]].copy(),
                 self._block_list[a[2]].copy())
@@ -150,7 +149,6 @@ class WoodokuEnv(gym.Env):
 
     def _is_valid_position(self, action) -> bool:
         block, location = self.action_to_blk_pos(action)
-
         # board와 block 비교
         for row in range(0, BLOCK_LENGTH):
             for col in range(0, BLOCK_LENGTH):
