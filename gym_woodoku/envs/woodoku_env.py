@@ -1,7 +1,7 @@
 import gymnasium as gym
 import pygame
 import numpy as np
-from gymnasium import spaces
+from gymnasium.spaces import Box, Dict, Discrete
 from .blocks import blocks
 import random
 
@@ -16,13 +16,11 @@ GRAY = (128, 128, 128)
 
 class WoodokuEnv(gym.Env):
     metadata = {"game_modes": ['woodoku'],
-                "obs_modes": ['divided', 'total_square'],
                 "render_modes": ['ansi', 'rgb_array', 'human'],
                 "render_fps": 10}
 
     def __init__(self,
                  game_mode='woodoku',
-                 obs_mode='total_square',
                  render_mode=None,
                  crash33=True):
 
@@ -31,32 +29,23 @@ class WoodokuEnv(gym.Env):
         assert game_mode in self.metadata['game_modes'], err_msg
         self.game_mode = game_mode
 
-        err_msg = f"{obs_mode} is not in {self.metadata['obs_modes']}"
-        assert obs_mode in self.metadata['obs_modes'], err_msg
-        self.obs_mode = obs_mode
-
         err_msg = f"{render_mode} is not in {self.metadata['render_modes']}"
         assert render_mode is None or render_mode in self.metadata['render_modes'], err_msg
         self.render_mode = render_mode
 
         self.crash33 = crash33
 
-        # define observation_space by obs_mode
-        if self.obs_mode == 'divided':
-            self.observation_space = spaces.Dict(
-                {
-                    "board": spaces.MultiBinary([9, 9, 1]),
-                    "block_1": spaces.MultiBinary([5, 5, 1]),
-                    "block_2": spaces.MultiBinary([5, 5, 1]),
-                    "block_3": spaces.MultiBinary([5, 5, 1])
-                }
-            )
-        elif self.obs_mode == 'total_square':
-            self.observation_space = spaces.MultiBinary(
-                [15, 15, 1])
+        self.observation_space = Dict(
+            {
+                "board": Box(low=0, high=1, shape=(9, 9), dtype=np.uint8),
+                "block_1": Box(low=0, high=1, shape=(5, 5), dtype=np.uint8),
+                "block_2": Box(low=0, high=1, shape=(5, 5), dtype=np.uint8),
+                "block_3": Box(low=0, high=1, shape=(5, 5), dtype=np.uint8)
+            }
+        )
 
         # action_space : (Block X Width X Height)
-        self.action_space = spaces.Discrete(243)
+        self.action_space = Discrete(243)
 
         # get kind of blocks by `game_mode`
         self._block_list = blocks[game_mode]
@@ -72,8 +61,7 @@ class WoodokuEnv(gym.Env):
         a = random.sample(range(self._block_list.shape[0]), 3)
         return (self._block_list[a[0]].copy(),
                 self._block_list[a[1]].copy(),
-                self._block_list[a[2]].copy()
-                )
+                self._block_list[a[2]].copy())
 
     def reset(self, seed=None, options=None):
         # reset seed
@@ -129,21 +117,12 @@ class WoodokuEnv(gym.Env):
                 self.legality[action] = 0
 
     def _get_obs(self):
-        if self.obs_mode == 'divided':
-            return {
-                "board": self._board.reshape(5, 5, 1),
-                "block_1": self._block_1.reshape(5, 5, 1),
-                "block_2": self._block_2.reshape(5, 5, 1),
-                "block_3": self._block_3.reshape(5, 5, 1)
-            }
-        elif self.obs_mode == 'total_square':
-            # Four states are combined into one 15x15 array as states for deep learning.
-            comb_state = np.zeros((15, 15), dtype=np.uint8)
-            comb_state[0:9, 3:12] = self._board
-            comb_state[10:15, 0:5] = self._block_1
-            comb_state[10:15, 5:10] = self._block_2
-            comb_state[10:15, 10:15] = self._block_3
-            return comb_state.reshape(15, 15, 1)
+        return {
+            "board": self._board,
+            "block_1": self._block_1,
+            "block_2": self._block_2,
+            "block_3": self._block_3
+        }
 
     def _get_info(self):
         return {'action_mask': self.legality,
