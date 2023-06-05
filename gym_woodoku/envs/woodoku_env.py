@@ -36,10 +36,10 @@ class WoodokuEnv(gym.Env):
 
         self.observation_space = Dict(
             {
-                "board": Box(low=0, high=1, shape=(9, 9), dtype=np.int32),
-                "block_1": Box(low=0, high=1, shape=(5, 5), dtype=np.int32),
-                "block_2": Box(low=0, high=1, shape=(5, 5), dtype=np.int32),
-                "block_3": Box(low=0, high=1, shape=(5, 5), dtype=np.int32)
+                "board": Box(low=0, high=1, shape=(9, 9), dtype=np.int8),
+                "block_1": Box(low=0, high=1, shape=(5, 5), dtype=np.int8),
+                "block_2": Box(low=0, high=1, shape=(5, 5), dtype=np.int8),
+                "block_3": Box(low=0, high=1, shape=(5, 5), dtype=np.int8)
             }
         )
 
@@ -72,7 +72,7 @@ class WoodokuEnv(gym.Env):
         self._score = 0
 
         # make board clean
-        self._board = np.zeros((9, 9), dtype=np.int32)
+        self._board = np.zeros((9, 9), dtype=np.int8)
 
         # get 3 blocks
         self._get_3_blocks_random()
