@@ -18,6 +18,11 @@ class RewardMode(gym.Wrapper):
                 reward = self.n_cell
             else:
                 reward = 28 * combo + 10 * straight + n_cell - 20
+        elif self.mode == 'non_straight':
+            if combo == 0:
+                reward = 0.1
+            else:
+                reward = 1 + combo
 
 
         return obs, reward, terminated, truncated, info
