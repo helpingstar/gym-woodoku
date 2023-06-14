@@ -95,7 +95,7 @@ class WoodokuEnv(gym.Env):
         self.n_cell = 0
 
         if self.render_mode == "human":
-            self._render_frame()
+            self.render()
 
         return observation, self._get_info()
 
@@ -296,8 +296,9 @@ class WoodokuEnv(gym.Env):
 
             self._get_legal_actions()
 
+        self.step_count += 1
         if self.render_mode == "human":
-            self._render_frame()
+            self.render()
 
         return self._get_obs(), reward, terminated, False, self._get_info()
 
@@ -306,12 +307,21 @@ class WoodokuEnv(gym.Env):
                                formatter={'str_kind': lambda x: x})
 
     def render(self):
-        if self.render_mode == 'ansi':
-            self._render_ansi(self)
-        elif self.render_mode == "rgb_array":
-            return self._render_frame()
+        if self.render_mode is None:
+            assert self.spec is not None
+            gym.logger.warn(
+                "You are calling render method without specifying any render mode. "
+                "You can specify the render_mode at initialization, "
+                f'e.g. gym.make("{self.spec.id}", render_mode="rgb_array")'
+            )
+            return
 
-    def _render_ansi(self):
+        if self.render_mode == 'ansi':
+            self._render_text()
+        else:  # self.render_mode in {"human", "rgb_array"}:
+            return self._render_gui(self.render_mode)
+
+    def _render_text(self):
         display_height = 17
         display_width = 21
         display_score_top = 1
@@ -345,7 +355,7 @@ class WoodokuEnv(gym.Env):
         for i in range(display_height):
             print(self._line_printer(game_display[i])[1:-1])
 
-    def _render_frame(self):
+    def _render_gui(self, mode):
         pygame.font.init()
         if self.window is None:
             pygame.init()
@@ -383,12 +393,12 @@ class WoodokuEnv(gym.Env):
                 for i in range(BLOCK_LENGTH):
                     self.block_col_pos[b][i] = block_left_margin + (block_left_margin + block_total_size) * b + self.block_square_size * i
 
-            if self.render_mode == "human":
+            if mode == "human":
                 pygame.display.init()
                 self.window = pygame.display.set_mode(
                     (self.window_size, self.window_size)
                 )
-            else:
+            elif mode == "rgb_array":
                 self.window = pygame.Surface((self.window_size, self.window_size))
 
         if self.clock is None:
@@ -449,7 +459,6 @@ class WoodokuEnv(gym.Env):
         canvas.blit(score, (10, 5))
         canvas.blit(num, (200, 5))
         canvas.blit(straight, (340, 5))
-        self.step_count += 1
 
         if self.render_mode == "human":
             self.window.blit(canvas, canvas.get_rect())
