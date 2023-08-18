@@ -1,3 +1,4 @@
+from typing import Tuple, Dict, List
 import gymnasium as gym
 import pygame
 import numpy as np
@@ -56,7 +57,7 @@ class WoodokuEnv(gym.Env):
 
         self.window_size = 512  # The size of the PyGame window
 
-    def _get_3_blocks(self) -> tuple:
+    def _get_3_blocks(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         a = self.np_random.choice(range(self._block_list.shape[0]), 3, replace=False)
         return (self._block_list[a[0]].copy(),
                 self._block_list[a[1]].copy(),
@@ -141,13 +142,13 @@ class WoodokuEnv(gym.Env):
                         return False
         return True
 
-    def _nonexist_block(self, action):
+    def _nonexist_block(self, action: int):
         # Deactivate the block corresponding to the action and set the array to 0.
         self._block_exist[action // 81] = False
         block, _ = self.action_to_blk_pos(action)
         block[:, :] = 0
 
-    def _is_valid_position(self, action) -> bool:
+    def _is_valid_position(self, action: int) -> bool:
         block, location = self.action_to_blk_pos(action)
         # board와 block 비교
         for row in range(0, BLOCK_LENGTH):
@@ -166,14 +167,14 @@ class WoodokuEnv(gym.Env):
         return True
 
     # Check whether the block corresponding to the action is valid.
-    def _is_valid_block(self, action) -> bool:
+    def _is_valid_block(self, action: int) -> bool:
         if self._block_exist[action // 81]:
             return True
         else:
             return False
 
     # If there is a block to destroy, destroy it and get the reward.
-    def _crash_block(self, action) -> int:
+    def _crash_block(self, action: int) -> int:
         dup_check = np.zeros((9, 9))
         rows = []
         cols = []
@@ -224,7 +225,7 @@ class WoodokuEnv(gym.Env):
         else:
             return 2 * self.combo + self.straight
 
-    def action_to_blk_pos(self, action) -> tuple:
+    def action_to_blk_pos(self, action: int) -> Tuple[np.ndarray, List[int, int]]:
         # First Block
         if 0 <= action and action <= 80:
             block = self._block_1
@@ -243,7 +244,7 @@ class WoodokuEnv(gym.Env):
         return block, location
 
     # Gets the position relative to the center of the border of the block.
-    def get_block_square(self, block) -> tuple:
+    def get_block_square(self, block: np.ndarray) -> Tuple[int, int, int, int]:
         row = []
         col = []
 
@@ -255,14 +256,14 @@ class WoodokuEnv(gym.Env):
                 col.append(c)
         return (row[0], row[-1], col[0], col[-1])
 
-    def place_block(self, action):
+    def place_block(self, action: int):
         # c_loc : where the center of the block is placed
         block, c_loc = self.action_to_blk_pos(action)
         r1, r2, c1, c2 = self.get_block_square(block)
         self._board[c_loc[0]+r1-2:c_loc[0]+r2-1, c_loc[1]+c1-2: c_loc[1]+c2-1] \
             += block[r1:r2+1, c1:c2+1]
 
-    def step(self, action):
+    def step(self, action: int) -> Tuple[np.ndarray, int, bool, bool, Dict]:
         err_msg = f"{action!r} ({type(action)}) invalid"
         assert self.action_space.contains(action), err_msg
 
@@ -355,7 +356,7 @@ class WoodokuEnv(gym.Env):
         for i in range(display_height):
             print(self._line_printer(game_display[i])[1:-1])
 
-    def _render_gui(self, mode):
+    def _render_gui(self, mode: str):
         pygame.font.init()
         if self.window is None:
             pygame.init()
