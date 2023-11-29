@@ -5,10 +5,6 @@ import numpy as np
 from gymnasium.spaces import Box, Dict, Discrete
 from .blocks import blocks
 
-MAX_BLOCK_NUM = 3
-BLOCK_LENGTH = 5
-BOARD_LENGTH = 9
-
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GRAY = (128, 128, 128)
@@ -57,6 +53,10 @@ class WoodokuEnv(gym.Env):
 
         self.window_size = 512  # The size of the PyGame window
 
+        self.MAX_BLOCK_NUM = 3
+        self.BLOCK_LENGTH = 5
+        self.BOARD_LENGTH = 9
+        
     def _get_3_blocks(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         a = self.np_random.choice(range(self._block_list.shape[0]), 3, replace=False)
         return (self._block_list[a[0]].copy(),
@@ -135,7 +135,7 @@ class WoodokuEnv(gym.Env):
     def _is_terminated(self) -> bool:
         # Check if the game can be continued with the blocks you own
         # If any number of cases can proceed, False is returned.
-        for blk_num in range(MAX_BLOCK_NUM):
+        for blk_num in range(self.MAX_BLOCK_NUM):
             if self._block_exist[blk_num]:
                 for act in range(blk_num*81, (blk_num+1) * 81):
                     if self._is_valid_position(act):
@@ -151,8 +151,8 @@ class WoodokuEnv(gym.Env):
     def _is_valid_position(self, action: int) -> bool:
         block, location = self.action_to_blk_pos(action)
         # board와 block 비교
-        for row in range(0, BLOCK_LENGTH):
-            for col in range(0, BLOCK_LENGTH):
+        for row in range(0, self.BLOCK_LENGTH):
+            for col in range(0, self.BLOCK_LENGTH):
                 # Condition for block position in block array
                 if block[row][col] == 1:
                     # location - 2 : leftmost top (0, 0)
@@ -185,22 +185,22 @@ class WoodokuEnv(gym.Env):
         self.n_cell = block.sum()
 
         # check row
-        for r in range(BOARD_LENGTH):
+        for r in range(self.BOARD_LENGTH):
             if self._board[r, :].sum() == 9:
                 if dup_check[r, :].sum() != 9:
                     self.combo += 1
                     dup_check[r, :] = 1
                     rows.append(r)
         # check col
-        for c in range(BOARD_LENGTH):
+        for c in range(self.BOARD_LENGTH):
             if self._board[:, c].sum() == 9:
                 if dup_check[:, c].sum() != 9:
                     self.combo += 1
                     dup_check[:, c] = 1
                     cols.append(c)
         # check square33
-        for r in range(0, BOARD_LENGTH, 3):
-            for c in range(0, BOARD_LENGTH, 3):
+        for r in range(0, self.BOARD_LENGTH, 3):
+            for c in range(0, self.BOARD_LENGTH, 3):
                 if self._board[r:r+3, c:c+3].sum() == 9:
                     if dup_check[r:r+3, c:c+3].sum() != 9:
                         self.combo += 1
@@ -225,7 +225,7 @@ class WoodokuEnv(gym.Env):
         else:
             return 2 * self.combo + self.straight
 
-    def action_to_blk_pos(self, action: int) -> Tuple[np.ndarray, List[int, int]]:
+    def action_to_blk_pos(self, action: int):
         # First Block
         if 0 <= action and action <= 80:
             block = self._block_1
@@ -376,22 +376,22 @@ class WoodokuEnv(gym.Env):
                 self.window_size - board_total_size - block_total_size) // 3
 
             # Initialize the positions of the squares on the board.
-            self.board_row_pos = np.zeros(BOARD_LENGTH, dtype=np.uint32)
-            self.board_col_pos = np.zeros(BOARD_LENGTH, dtype=np.uint32)
+            self.board_row_pos = np.zeros(self.BOARD_LENGTH, dtype=np.uint32)
+            self.board_col_pos = np.zeros(self.BOARD_LENGTH, dtype=np.uint32)
 
-            for i in range(BOARD_LENGTH):
+            for i in range(self.BOARD_LENGTH):
                 self.board_col_pos[i] = board_left_margin + self.board_square_size * i
                 self.board_row_pos[i] = top_margin + self.board_square_size * i
 
             # Initializes the position of the square in the block.
-            self.block_row_pos = np.zeros(BLOCK_LENGTH, dtype=np.uint32)
-            self.block_col_pos = np.zeros((MAX_BLOCK_NUM, BLOCK_LENGTH), dtype=np.uint32)
+            self.block_row_pos = np.zeros(self.BLOCK_LENGTH, dtype=np.uint32)
+            self.block_col_pos = np.zeros((self.MAX_BLOCK_NUM, self.BLOCK_LENGTH), dtype=np.uint32)
 
-            for i in range(BLOCK_LENGTH):
+            for i in range(self.BLOCK_LENGTH):
                 self.block_row_pos[i] = self.window_size-top_margin-block_total_size + self.block_square_size * i
 
-            for b in range(MAX_BLOCK_NUM):
-                for i in range(BLOCK_LENGTH):
+            for b in range(self.MAX_BLOCK_NUM):
+                for i in range(self.BLOCK_LENGTH):
                     self.block_col_pos[b][i] = block_left_margin + (block_left_margin + block_total_size) * b + self.block_square_size * i
 
             if mode == "human":
@@ -409,8 +409,8 @@ class WoodokuEnv(gym.Env):
         canvas.fill(WHITE)
 
         # draw board square
-        for r in range(BOARD_LENGTH):
-            for c in range(BOARD_LENGTH):
+        for r in range(self.BOARD_LENGTH):
+            for c in range(self.BOARD_LENGTH):
                 if self._board[r][c] == 1:
                     pygame.draw.rect(
                         canvas,
@@ -432,8 +432,8 @@ class WoodokuEnv(gym.Env):
 
         # draw block square
         for idx, block in enumerate([self._block_1, self._block_2, self._block_3]):
-            for r in range(BLOCK_LENGTH):
-                for c in range(BLOCK_LENGTH):
+            for r in range(self.BLOCK_LENGTH):
+                for c in range(self.BLOCK_LENGTH):
                     if block[r][c] == 1:
                         pygame.draw.rect(
                             canvas,
