@@ -11,22 +11,22 @@ GRAY = (128, 128, 128)
 
 
 class WoodokuEnv(gym.Env):
-    metadata = {"game_modes": ['woodoku'],
-                "render_modes": ['ansi', 'rgb_array', 'human'],
-                "render_fps": 10}
+    metadata = {
+        "game_modes": ["woodoku"],
+        "render_modes": ["ansi", "rgb_array", "human"],
+        "render_fps": 10,
+    }
 
-    def __init__(self,
-                 game_mode='woodoku',
-                 render_mode=None,
-                 crash33=True):
-
+    def __init__(self, game_mode="woodoku", render_mode=None, crash33=True):
         # ASSERT
         err_msg = f"{game_mode} is not in {self.metadata['game_modes']}"
-        assert game_mode in self.metadata['game_modes'], err_msg
+        assert game_mode in self.metadata["game_modes"], err_msg
         self.game_mode = game_mode
 
         err_msg = f"{render_mode} is not in {self.metadata['render_modes']}"
-        assert render_mode is None or render_mode in self.metadata['render_modes'], err_msg
+        assert (
+            render_mode is None or render_mode in self.metadata["render_modes"]
+        ), err_msg
         self.render_mode = render_mode
 
         self.crash33 = crash33
@@ -36,7 +36,7 @@ class WoodokuEnv(gym.Env):
                 "board": Box(low=0, high=1, shape=(9, 9), dtype=np.int8),
                 "block_1": Box(low=0, high=1, shape=(5, 5), dtype=np.int8),
                 "block_2": Box(low=0, high=1, shape=(5, 5), dtype=np.int8),
-                "block_3": Box(low=0, high=1, shape=(5, 5), dtype=np.int8)
+                "block_3": Box(low=0, high=1, shape=(5, 5), dtype=np.int8),
             }
         )
 
@@ -56,12 +56,14 @@ class WoodokuEnv(gym.Env):
         self.MAX_BLOCK_NUM = 3
         self.BLOCK_LENGTH = 5
         self.BOARD_LENGTH = 9
-        
+
     def _get_3_blocks(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         a = self.np_random.choice(range(self._block_list.shape[0]), 3, replace=False)
-        return (self._block_list[a[0]].copy(),
-                self._block_list[a[1]].copy(),
-                self._block_list[a[2]].copy())
+        return (
+            self._block_list[a[0]].copy(),
+            self._block_list[a[1]].copy(),
+            self._block_list[a[2]].copy(),
+        )
 
     def reset(self, seed=None, options=None):
         # reset seed
@@ -121,23 +123,25 @@ class WoodokuEnv(gym.Env):
             "board": self._board,
             "block_1": self._block_1,
             "block_2": self._block_2,
-            "block_3": self._block_3
+            "block_3": self._block_3,
         }
 
     def _get_info(self):
-        return {'action_mask': self.legality,
-                'score': self._score,
-                'straight': self.straight,
-                'combo': self.combo,
-                'is_legal': self.is_legal,
-                'n_cell': self.n_cell}
+        return {
+            "action_mask": self.legality,
+            "score": self._score,
+            "straight": self.straight,
+            "combo": self.combo,
+            "is_legal": self.is_legal,
+            "n_cell": self.n_cell,
+        }
 
     def _is_terminated(self) -> bool:
         # Check if the game can be continued with the blocks you own
         # If any number of cases can proceed, False is returned.
         for blk_num in range(self.MAX_BLOCK_NUM):
             if self._block_exist[blk_num]:
-                for act in range(blk_num*81, (blk_num+1) * 81):
+                for act in range(blk_num * 81, (blk_num + 1) * 81):
                     if self._is_valid_position(act):
                         return False
         return True
@@ -157,7 +161,10 @@ class WoodokuEnv(gym.Env):
                 if block[row][col] == 1:
                     # location - 2 : leftmost top (0, 0)
                     # When the block is located outside the board
-                    if not (0 <= (location[0] - 2 + row) < 9 and 0 <= (location[1] - 2 + col) < 9):
+                    if not (
+                        0 <= (location[0] - 2 + row) < 9
+                        and 0 <= (location[1] - 2 + col) < 9
+                    ):
                         return False
 
                     # When there is already another block
@@ -201,10 +208,10 @@ class WoodokuEnv(gym.Env):
         # check square33
         for r in range(0, self.BOARD_LENGTH, 3):
             for c in range(0, self.BOARD_LENGTH, 3):
-                if self._board[r:r+3, c:c+3].sum() == 9:
-                    if dup_check[r:r+3, c:c+3].sum() != 9:
+                if self._board[r : r + 3, c : c + 3].sum() == 9:
+                    if dup_check[r : r + 3, c : c + 3].sum() != 9:
                         self.combo += 1
-                        dup_check[r:r+3, c:c+3] = 1
+                        dup_check[r : r + 3, c : c + 3] = 1
                         square33.append((r, c))
 
         for r in rows:
@@ -212,7 +219,7 @@ class WoodokuEnv(gym.Env):
         for c in cols:
             self._board[:, c] = 0
         for r, c in square33:
-            self._board[r:r+3, c:c+3] = 0
+            self._board[r : r + 3, c : c + 3] = 0
 
         self.combo = len(rows) + len(cols) + len(square33)
         if self.combo > 0:
@@ -260,8 +267,9 @@ class WoodokuEnv(gym.Env):
         # c_loc : where the center of the block is placed
         block, c_loc = self.action_to_blk_pos(action)
         r1, r2, c1, c2 = self.get_block_square(block)
-        self._board[c_loc[0]+r1-2:c_loc[0]+r2-1, c_loc[1]+c1-2: c_loc[1]+c2-1] \
-            += block[r1:r2+1, c1:c2+1]
+        self._board[
+            c_loc[0] + r1 - 2 : c_loc[0] + r2 - 1, c_loc[1] + c1 - 2 : c_loc[1] + c2 - 1
+        ] += block[r1 : r2 + 1, c1 : c2 + 1]
 
     def step(self, action: int) -> Tuple[np.ndarray, int, bool, bool, Dict]:
         err_msg = f"{action!r} ({type(action)}) invalid"
@@ -304,8 +312,7 @@ class WoodokuEnv(gym.Env):
         return self._get_obs(), reward, terminated, False, self._get_info()
 
     def _line_printer(self, line: np.ndarray):
-        return np.array2string(line, separator='',
-                               formatter={'str_kind': lambda x: x})
+        return np.array2string(line, separator="", formatter={"str_kind": lambda x: x})
 
     def render(self):
         if self.render_mode is None:
@@ -317,7 +324,7 @@ class WoodokuEnv(gym.Env):
             )
             return
 
-        if self.render_mode == 'ansi':
+        if self.render_mode == "ansi":
             self._render_text()
         else:  # self.render_mode in {"human", "rgb_array"}:
             return self._render_gui(self.render_mode)
@@ -326,31 +333,29 @@ class WoodokuEnv(gym.Env):
         display_height = 17
         display_width = 21
         display_score_top = 1
-        new_board = np.where(self._board == 1, '■', '□')
-        new_block_1 = np.where(self._block_1 == 1, '■', '□')
-        new_block_2 = np.where(self._block_2 == 1, '■', '□')
-        new_block_3 = np.where(self._block_3 == 1, '■', '□')
-        game_display = np.full(
-            (display_height, display_width), ' ', dtype='<U1')
+        new_board = np.where(self._board == 1, "■", "□")
+        new_block_1 = np.where(self._block_1 == 1, "■", "□")
+        new_block_2 = np.where(self._block_2 == 1, "■", "□")
+        new_block_3 = np.where(self._block_3 == 1, "■", "□")
+        game_display = np.full((display_height, display_width), " ", dtype="<U1")
 
         # copy board
         game_display[1:10, 1:10] = new_board
 
         # copy block
         for i, block in enumerate([new_block_1, new_block_2, new_block_3]):
-            game_display[11:16, 7*i+1:7*i+6] = block
+            game_display[11:16, 7 * i + 1 : 7 * i + 6] = block
 
         # create score_board
-        game_display[display_score_top+1,
-                     11:20] = np.array(list('┌'+'─'*7+'┐'))
-        game_display[display_score_top+2,
-                     11:20] = np.array(list('│'+' SCORE '+'│'))
-        game_display[display_score_top+3,
-                     11:20] = np.array(list('├'+'─'*7+'┤'))
-        game_display[display_score_top+4,
-                     11:20] = np.array(list(f'│{self._score:07d}│'))
-        game_display[display_score_top+5,
-                     11:20] = np.array(list('└'+'─'*7+'┘'))
+        game_display[display_score_top + 1, 11:20] = np.array(list("┌" + "─" * 7 + "┐"))
+        game_display[display_score_top + 2, 11:20] = np.array(
+            list("│" + " SCORE " + "│")
+        )
+        game_display[display_score_top + 3, 11:20] = np.array(list("├" + "─" * 7 + "┤"))
+        game_display[display_score_top + 4, 11:20] = np.array(
+            list(f"│{self._score:07d}│")
+        )
+        game_display[display_score_top + 5, 11:20] = np.array(list("└" + "─" * 7 + "┘"))
 
         # Display game_display
         for i in range(display_height):
@@ -367,13 +372,10 @@ class WoodokuEnv(gym.Env):
             board_total_size = self.board_square_size * 9
             block_total_size = self.block_square_size * 5
 
-            board_left_margin = (
-                self.window_size - board_total_size) // 2
-            block_left_margin = (
-                self.window_size - block_total_size*3) // 4
+            board_left_margin = (self.window_size - board_total_size) // 2
+            block_left_margin = (self.window_size - block_total_size * 3) // 4
 
-            top_margin = (
-                self.window_size - board_total_size - block_total_size) // 3
+            top_margin = (self.window_size - board_total_size - block_total_size) // 3
 
             # Initialize the positions of the squares on the board.
             self.board_row_pos = np.zeros(self.BOARD_LENGTH, dtype=np.uint32)
@@ -385,14 +387,25 @@ class WoodokuEnv(gym.Env):
 
             # Initializes the position of the square in the block.
             self.block_row_pos = np.zeros(self.BLOCK_LENGTH, dtype=np.uint32)
-            self.block_col_pos = np.zeros((self.MAX_BLOCK_NUM, self.BLOCK_LENGTH), dtype=np.uint32)
+            self.block_col_pos = np.zeros(
+                (self.MAX_BLOCK_NUM, self.BLOCK_LENGTH), dtype=np.uint32
+            )
 
             for i in range(self.BLOCK_LENGTH):
-                self.block_row_pos[i] = self.window_size-top_margin-block_total_size + self.block_square_size * i
+                self.block_row_pos[i] = (
+                    self.window_size
+                    - top_margin
+                    - block_total_size
+                    + self.block_square_size * i
+                )
 
             for b in range(self.MAX_BLOCK_NUM):
                 for i in range(self.BLOCK_LENGTH):
-                    self.block_col_pos[b][i] = block_left_margin + (block_left_margin + block_total_size) * b + self.block_square_size * i
+                    self.block_col_pos[b][i] = (
+                        block_left_margin
+                        + (block_left_margin + block_total_size) * b
+                        + self.block_square_size * i
+                    )
 
             if mode == "human":
                 pygame.display.init()
@@ -417,17 +430,17 @@ class WoodokuEnv(gym.Env):
                         BLACK,
                         pygame.Rect(
                             (self.board_col_pos[c], self.board_row_pos[r]),  # pos
-                            (self.board_square_size, self.board_square_size)
-                        )
+                            (self.board_square_size, self.board_square_size),
+                        ),
                     )
                 pygame.draw.rect(
                     canvas,
                     GRAY,
                     pygame.Rect(
                         (self.board_col_pos[c], self.board_row_pos[r]),  # pos
-                        (self.board_square_size, self.board_square_size)
+                        (self.board_square_size, self.board_square_size),
                     ),
-                    2
+                    2,
                 )
 
         # draw block square
@@ -439,24 +452,27 @@ class WoodokuEnv(gym.Env):
                             canvas,
                             BLACK,
                             pygame.Rect(
-                                (self.block_col_pos[idx][c], self.block_row_pos[r]),  # pos
-                                (self.block_square_size, self.block_square_size)
-                            )
+                                (
+                                    self.block_col_pos[idx][c],
+                                    self.block_row_pos[r],
+                                ),  # pos
+                                (self.block_square_size, self.block_square_size),
+                            ),
                         )
                     pygame.draw.rect(
                         canvas,
                         GRAY,
                         pygame.Rect(
                             (self.block_col_pos[idx][c], self.block_row_pos[r]),  # pos
-                            (self.block_square_size, self.block_square_size)
+                            (self.block_square_size, self.block_square_size),
                         ),
-                        2
+                        2,
                     )
 
         myFont = pygame.font.SysFont(None, 30)
-        num = myFont.render(f'step: {self.step_count}', True, (0, 0, 0))
-        score = myFont.render(f'score: {self._score}', True, (0, 0, 0))
-        straight = myFont.render(f'straight: {self.straight}', True, (0, 0, 0))
+        num = myFont.render(f"step: {self.step_count}", True, (0, 0, 0))
+        score = myFont.render(f"score: {self._score}", True, (0, 0, 0))
+        straight = myFont.render(f"straight: {self.straight}", True, (0, 0, 0))
         canvas.blit(score, (10, 5))
         canvas.blit(num, (200, 5))
         canvas.blit(straight, (340, 5))
