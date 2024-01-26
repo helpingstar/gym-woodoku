@@ -1,8 +1,8 @@
-# Welcome to gym-woodoku!
+## Welcome to gym-woodoku!
 
 ![woodoku_ex_video](https://user-images.githubusercontent.com/54899900/202888885-bd8d18eb-68aa-4dd0-963e-61f311716296.gif)
 
-# Installation
+## Installation
 
 ```bash
 git clone https://github.com/helpingstar/gym-woodoku.git
@@ -20,7 +20,7 @@ pip install -e .
 !pip install -e .
 ```
 
-# Usage
+## Usage
 
 ```python
 import gym_woodoku
@@ -38,23 +38,16 @@ for i in range(100000):
 env.close()
 ```
 
-# environment
+## Observation
 
-## `state`
-
-### `board`
-
-9 X 9 `numpy.array`, `dtype=uint8`
-
-<img src = "https://user-images.githubusercontent.com/76930260/202095781-ca987cc9-0233-4aa6-a754-e81ad35b1587.png" width = "200" height = "200"/>
-
-
-
-### `block`
-
-5 X 5 `numpy.array`, `dtype=uint8`
-
-<image src = "https://user-images.githubusercontent.com/76930260/202096150-8d654bf0-ba08-428e-9367-760eff35756c.png" height = "100" weight = "100"/>
+```
+Dict({
+  "board": Box(low=0, high=1, shape=(9, 9), dtype=np.int8),
+  "block_1": Box(low=0, high=1, shape=(5, 5), dtype=np.int8),
+  "block_2": Box(low=0, high=1, shape=(5, 5), dtype=np.int8),
+  "block_3": Box(low=0, high=1, shape=(5, 5), dtype=np.int8),
+})
+```
 
 **Location of Blocks in Array :**
 
@@ -71,7 +64,7 @@ Each point is placed at the index `(2,2)` of the size array `(5,5)`. (zero based
 
 ## action
 
-`action_space` : `Discrete(243)`
+action_space : `Discrete(243)`
 
 * 0~80 : use `block_1`
   * Place `block_1` at ((action-0) // 9, (action-0) % 9)
@@ -91,35 +84,24 @@ Each point is placed at the index `(2,2)` of the size array `(5,5)`. (zero based
 
 <img src="https://user-images.githubusercontent.com/54899900/202888125-affd44e6-d2ef-4103-a336-d2402366386a.jpg" width="150" height="150"/>
 
-## `metadata`
 
-### `game_mode`
-Gets the type of block to use in the game.
-* `woodoku`
 
-### `obs_mode`
-Decide how to obtain the observation.
+## Arguments
 
-* `divided` : 1 board and 3 blocks
-  * `observation_space` : `Dict({"board": MultiBinary([9, 9]), "block_(1/2/3)": MultiBinary([5, 5])})`
-* `total_square`
-  * `observation_space` : `MultiBinary([15, 15, 1])`
+```python
+import gym_woodoku
+import gymnasium as gym
 
-<img src="https://user-images.githubusercontent.com/54899900/202887172-c62ad9ee-673c-41dc-9b68-e00d32cf8854.jpg" width="250" height="250"/>
+env = gym.make('gym_woodoku/Woodoku-v0', 
+                game_mode: str = 'woodoku',
+                render_mode: str = None,
+                crash33: bool = True)
+```
 
-### `reward_modes`
-Determine the scoring method.
-* `one` : Get a reward of 1 for each block destroyed.
-  * 1 + combo + straight
-* `woodoku` : Follow Woodoku's scoring system.
-  * 28 * combo + 10 * straight + (number of square) - 20
-
-combo : Number of broken pieces at once
-
-straight : broken turns in a row
-
-### `render_modes`
-Determines gym rendering method.
-* `ansi` : The game screen appears on the console.
-* `human` : continuously rendered in the current display
-* `rgb_array` : return a single frame representing the current state of the environment. Use with RecordVideo Wrapper if you want to save episodes.
+* `game_mode` : Gets the type of block to use in the game.
+  * `woodoku`
+* `crash33` : If true, when a 3x3 cell is filled, that portion will be broken.
+* `render_modes` : Determines gym rendering method.
+  * `ansi` : The game screen appears on the console.
+  * `human` : continuously rendered in the current display
+  * `rgb_array` : return a single frame representing the current state of the environment. Use with RecordVideo Wrapper if you want to save episodes.
