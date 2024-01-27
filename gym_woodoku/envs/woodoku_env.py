@@ -59,6 +59,15 @@ class WoodokuEnv(gym.Env):
 
     def _get_3_blocks(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         a = self.np_random.choice(range(self._block_list.shape[0]), 3, replace=False)
+        self._block_valid_pos = []
+        for i in range(3):
+            valid_list = []
+            for r in range(5):
+                for c in range(5):
+                    if self._block_list[a[i]][r][c] == 1:
+                        valid_list.append((r, c))
+            self._block_valid_pos.append(valid_list)
+
         return (
             self._block_list[a[0]].copy(),
             self._block_list[a[1]].copy(),
@@ -155,21 +164,18 @@ class WoodokuEnv(gym.Env):
     def _is_valid_position(self, action: int) -> bool:
         block, location = self.action_to_blk_pos(action)
         # board와 block 비교
-        for row in range(0, self.BLOCK_LENGTH):
-            for col in range(0, self.BLOCK_LENGTH):
-                # Condition for block position in block array
-                if block[row][col] == 1:
-                    # location - 2 : leftmost top (0, 0)
-                    # When the block is located outside the board
-                    if not (
-                        0 <= (location[0] - 2 + row) < 9
-                        and 0 <= (location[1] - 2 + col) < 9
-                    ):
-                        return False
+        for row, col in self._block_valid_pos[action // 81]:
+            # location - 2 : leftmost top (0, 0)
+            # When the block is located outside the board
+            if not (
+                0 <= (location[0] - 2 + row) < 9
+                and 0 <= (location[1] - 2 + col) < 9
+            ):
+                return False
 
-                    # When there is already another block
-                    if self._board[location[0] - 2 + row][location[1] - 2 + col] == 1:
-                        return False
+            # When there is already another block
+            if self._board[location[0] - 2 + row][location[1] - 2 + col] == 1:
+                return False
 
         return True
 
