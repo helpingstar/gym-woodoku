@@ -91,7 +91,7 @@ class WoodokuEnv(gym.Env):
         self._block_exist = [True, True, True]
 
         # Whether a block can be placed in its place.
-        self.legality = np.zeros((243,), dtype=np.uint8)
+        self.legality = np.zeros((243,), dtype=np.int8)
         self._get_legal_actions()
 
         # get observation and info
