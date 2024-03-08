@@ -15,7 +15,7 @@ class RewardMode(gym.Wrapper):
 
         if self.mode == 'woodoku':
             if combo == 0:
-                reward = self.n_cell
+                reward = n_cell
             else:
                 reward = 28 * combo + 10 * straight + n_cell - 20
         elif self.mode == 'non_straight':
