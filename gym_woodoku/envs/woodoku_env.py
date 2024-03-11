@@ -15,22 +15,24 @@ class WoodokuEnv(gym.Env):
         "game_modes": ["woodoku"],
         "render_modes": ["ansi", "rgb_array", "human"],
         "render_fps": 10,
+        "score_modes": ["woodoku"],
     }
 
-    def __init__(self, game_mode="woodoku", render_mode=None, crash33=True):
+    def __init__(self, game_mode="woodoku", render_mode=None, crash33=True, score_mode="woodoku"):
         # ASSERT
         err_msg = f"{game_mode} is not in {self.metadata['game_modes']}"
         assert game_mode in self.metadata["game_modes"], err_msg
         self.game_mode = game_mode
 
         err_msg = f"{render_mode} is not in {self.metadata['render_modes']}"
-        assert (
-            render_mode is None or render_mode in self.metadata["render_modes"]
-        ), err_msg
+        assert render_mode is None or render_mode in self.metadata["render_modes"], err_msg
         self.render_mode = render_mode
 
-        self.crash33 = crash33
+        err_msg = f"{score_mode} is not in {self.metadata['score_modes']}"
+        assert score_mode in self.metadata["score_modes"], err_msg
+        self.score_mode = score_mode
 
+        self.crash33 = crash33
         self.observation_space = Dict(
             {
                 "board": Box(low=0, high=1, shape=(9, 9), dtype=np.int8),
@@ -167,10 +169,7 @@ class WoodokuEnv(gym.Env):
         for row, col in self._block_valid_pos[action // 81]:
             # location - 2 : leftmost top (0, 0)
             # When the block is located outside the board
-            if not (
-                0 <= (location[0] - 2 + row) < 9
-                and 0 <= (location[1] - 2 + col) < 9
-            ):
+            if not (0 <= (location[0] - 2 + row) < 9 and 0 <= (location[1] - 2 + col) < 9):
                 return False
 
             # When there is already another block
@@ -234,9 +233,16 @@ class WoodokuEnv(gym.Env):
             self.straight = 0
 
         if self.combo == 0:
-            return 1
+            return self.n_cell
         else:
-            return 2 * self.combo + self.straight
+            return 28 * self.combo + 10 * self.straight + self.n_cell - 20
+
+    def _get_score(self):
+        if self.score_mode == "woodoku":
+            if self.combo == 0:
+                return self.n_cell
+            else:
+                return 28 * self.combo + 10 * self.straight + self.n_cell - 20
 
     def action_to_blk_pos(self, action: int):
         # First Block
@@ -273,9 +279,9 @@ class WoodokuEnv(gym.Env):
         # c_loc : where the center of the block is placed
         block, c_loc = self.action_to_blk_pos(action)
         r1, r2, c1, c2 = self.get_block_square(block)
-        self._board[
-            c_loc[0] + r1 - 2 : c_loc[0] + r2 - 1, c_loc[1] + c1 - 2 : c_loc[1] + c2 - 1
-        ] += block[r1 : r2 + 1, c1 : c2 + 1]
+        self._board[c_loc[0] + r1 - 2 : c_loc[0] + r2 - 1, c_loc[1] + c1 - 2 : c_loc[1] + c2 - 1] += block[
+            r1 : r2 + 1, c1 : c2 + 1
+        ]
 
     def step(self, action: int) -> Tuple[np.ndarray, int, bool, bool, Dict]:
         err_msg = f"{action!r} ({type(action)}) invalid"
@@ -296,7 +302,7 @@ class WoodokuEnv(gym.Env):
 
             # If there is a block to destroy, destroy it and get the corresponding reward.
             reward = self._crash_block(action)
-            self._score += reward
+            self._score += self._get_score()
 
             # make block zero and _block_exist to False
             self._nonexist_block(action)
@@ -354,13 +360,9 @@ class WoodokuEnv(gym.Env):
 
         # create score_board
         game_display[display_score_top + 1, 11:20] = np.array(list("┌" + "─" * 7 + "┐"))
-        game_display[display_score_top + 2, 11:20] = np.array(
-            list("│" + " SCORE " + "│")
-        )
+        game_display[display_score_top + 2, 11:20] = np.array(list("│" + " SCORE " + "│"))
         game_display[display_score_top + 3, 11:20] = np.array(list("├" + "─" * 7 + "┤"))
-        game_display[display_score_top + 4, 11:20] = np.array(
-            list(f"│{self._score:07d}│")
-        )
+        game_display[display_score_top + 4, 11:20] = np.array(list(f"│{self._score:07d}│"))
         game_display[display_score_top + 5, 11:20] = np.array(list("└" + "─" * 7 + "┘"))
 
         # Display game_display
@@ -393,31 +395,20 @@ class WoodokuEnv(gym.Env):
 
             # Initializes the position of the square in the block.
             self.block_row_pos = np.zeros(self.BLOCK_LENGTH, dtype=np.uint32)
-            self.block_col_pos = np.zeros(
-                (self.MAX_BLOCK_NUM, self.BLOCK_LENGTH), dtype=np.uint32
-            )
+            self.block_col_pos = np.zeros((self.MAX_BLOCK_NUM, self.BLOCK_LENGTH), dtype=np.uint32)
 
             for i in range(self.BLOCK_LENGTH):
-                self.block_row_pos[i] = (
-                    self.window_size
-                    - top_margin
-                    - block_total_size
-                    + self.block_square_size * i
-                )
+                self.block_row_pos[i] = self.window_size - top_margin - block_total_size + self.block_square_size * i
 
             for b in range(self.MAX_BLOCK_NUM):
                 for i in range(self.BLOCK_LENGTH):
                     self.block_col_pos[b][i] = (
-                        block_left_margin
-                        + (block_left_margin + block_total_size) * b
-                        + self.block_square_size * i
+                        block_left_margin + (block_left_margin + block_total_size) * b + self.block_square_size * i
                     )
 
             if mode == "human":
                 pygame.display.init()
-                self.window = pygame.display.set_mode(
-                    (self.window_size, self.window_size)
-                )
+                self.window = pygame.display.set_mode((self.window_size, self.window_size))
             elif mode == "rgb_array":
                 self.window = pygame.Surface((self.window_size, self.window_size))
 
@@ -489,9 +480,7 @@ class WoodokuEnv(gym.Env):
             pygame.display.update()
             self.clock.tick(self.metadata["render_fps"])
         else:  # rgb_array
-            return np.transpose(
-                np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
-            )
+            return np.transpose(np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2))
 
     def close(self):
         if self.window is not None:
