@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "gym-woodoku"
+version = "0.1.0"
+description = "It is a reinforcement learning environment for block puzzle games."
+authors = ["helpingstar <iamhelpingstar@gmail.com>"]
+license = "MIT License"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+numpy = "^1.26.4"
+pygame = "^2.1.0"
+gymnasium = "^1.0.0a1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -5,6 +5,7 @@ test.*
 # C extensions
 *.so
 
+poetry.lock
 # Distribution / packaging
 bin/
 build/
