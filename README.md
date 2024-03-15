@@ -1,6 +1,6 @@
 ## Welcome to gym-woodoku!
 
-![woodoku_ex_video](https://user-images.githubusercontent.com/54899900/202888885-bd8d18eb-68aa-4dd0-963e-61f311716296.gif)
+https://github.com/helpingstar/gym-woodoku/assets/54899900/23798d16-b2af-4c0d-8688-8751330ac82f
 
 ## Installation
 
