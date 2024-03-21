@@ -1,6 +1,6 @@
 ## Welcome to gym-woodoku!
 
-https://github.com/helpingstar/gym-woodoku/assets/54899900/23798d16-b2af-4c0d-8688-8751330ac82f
+https://github.com/helpingstar/gym-woodoku/assets/54899900/57d6b2fb-f150-4769-b80f-c4115cc4e64a
 
 ## Installation
 
