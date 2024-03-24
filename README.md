@@ -7,17 +7,7 @@ https://github.com/helpingstar/gym-woodoku/assets/54899900/57d6b2fb-f150-4769-b8
 ```bash
 git clone https://github.com/helpingstar/gym-woodoku.git
 cd gym-woodoku
-pip install -r requirements.txt
 pip install -e .
-```
-
-## Colab
-
-```bash
-!git clone https://github.com/helpingstar/gym-woodoku.git
-%cd gym-woodoku
-!pip install -r requirements.txt
-!pip install -e .
 ```
 
 ## Usage
