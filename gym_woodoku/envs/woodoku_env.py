@@ -1,8 +1,15 @@
-from typing import Tuple, Dict, List
+"""
+This code is written to reference board positions based on `r`(row) and `c`(column) instead of `x` and `y`. 
+The top left corner is represented as [0, 0], where the first axis indicates `r` and the second axis indicates `c`, 
+with indices increasing downwards and to the right, respectively.
+"""
+
+from typing import Tuple, Dict
 import gymnasium as gym
+from gymnasium import spaces
 import pygame
 import numpy as np
-from gymnasium.spaces import Box, Dict, Discrete
+from numpy.typing import NDArray
 from .blocks import blocks
 
 WHITE = (255, 255, 255)
@@ -33,17 +40,17 @@ class WoodokuEnv(gym.Env):
         self.score_mode = score_mode
 
         self.crash33 = crash33
-        self.observation_space = Dict(
+        self.observation_space = spaces.Dict(
             {
-                "board": Box(low=0, high=1, shape=(9, 9), dtype=np.int8),
-                "block_1": Box(low=0, high=1, shape=(5, 5), dtype=np.int8),
-                "block_2": Box(low=0, high=1, shape=(5, 5), dtype=np.int8),
-                "block_3": Box(low=0, high=1, shape=(5, 5), dtype=np.int8),
+                "board": spaces.Box(low=0, high=1, shape=(9, 9), dtype=np.int8),
+                "block_1": spaces.Box(low=0, high=1, shape=(5, 5), dtype=np.int8),
+                "block_2": spaces.Box(low=0, high=1, shape=(5, 5), dtype=np.int8),
+                "block_3": spaces.Box(low=0, high=1, shape=(5, 5), dtype=np.int8),
             }
         )
 
         # action_space : (Block X Width X Height)
-        self.action_space = Discrete(243)
+        self.action_space = spaces.Discrete(243)
 
         # get kind of blocks by `game_mode`
         self._block_list = blocks[game_mode]
@@ -59,7 +66,7 @@ class WoodokuEnv(gym.Env):
         self.BLOCK_LENGTH = 5
         self.BOARD_LENGTH = 9
 
-    def _get_3_blocks(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def _get_3_blocks(self) -> Tuple[NDArray[np.int8], NDArray[np.int8], NDArray[np.int8]]:
         a = self.np_random.choice(range(self._block_list.shape[0]), 3, replace=False)
         self._block_valid_pos = []
         for i in range(3):
@@ -129,7 +136,7 @@ class WoodokuEnv(gym.Env):
             else:
                 self.legality[action] = 0
 
-    def _get_obs(self):
+    def _get_obs(self) -> Dict[str, NDArray[np.int8]]:
         return {
             "board": self._board,
             "block_1": self._block_1,
@@ -161,7 +168,7 @@ class WoodokuEnv(gym.Env):
         # Deactivate the block corresponding to the action and set the array to 0.
         self._block_exist[action // 81] = False
         block, _ = self.action_to_blk_pos(action)
-        block[:, :] = 0
+        block.fill(0)
 
     def _is_valid_position(self, action: int) -> bool:
         block, location = self.action_to_blk_pos(action)
@@ -187,6 +194,14 @@ class WoodokuEnv(gym.Env):
 
     # If there is a block to destroy, destroy it and get the reward.
     def _crash_block(self, action: int) -> int:
+        """Checks the board and if there are blocks to break, it verifies duplicates and removes them, then returns the reward value.
+        If there are broken blocks, increment the straight value.
+        Args:
+            action (int): action
+
+        Returns:
+            int: reward
+        """
         dup_check = np.zeros((9, 9))
         rows = []
         cols = []
@@ -220,11 +235,11 @@ class WoodokuEnv(gym.Env):
                         square33.append((r, c))
 
         for r in rows:
-            self._board[r, :] = 0
+            self._board[r, :].fill(0)
         for c in cols:
-            self._board[:, c] = 0
+            self._board[:, c].fill(0)
         for r, c in square33:
-            self._board[r : r + 3, c : c + 3] = 0
+            self._board[r : r + 3, c : c + 3].fill(0)
 
         self.combo = len(rows) + len(cols) + len(square33)
         if self.combo > 0:
@@ -232,6 +247,7 @@ class WoodokuEnv(gym.Env):
         else:
             self.straight = 0
 
+        # return reward
         if self.combo == 0:
             return self.n_cell
         else:
@@ -244,46 +260,81 @@ class WoodokuEnv(gym.Env):
             else:
                 return 28 * self.combo + 10 * self.straight + self.n_cell - 20
 
-    def action_to_blk_pos(self, action: int):
+    def action_to_blk_pos(self, action: int) -> Tuple[NDArray[np.int8], Tuple[int, int]]:
+        """Converts an integer representing the action into the corresponding `_block_*` and the desired placement coordinates, and returns them.
+        The placement coordinates refer to the location of the index (2, 2), which is the center of the 5x5 block.
+
+        Args:
+            action (int): action, [0, 242]
+
+        Returns:
+            Tuple[NDArray[np.int8], Tuple[int, int]]: (corresponding `_block_*`, (r coordinate, c coordinate))
+        """
         # First Block
-        if 0 <= action and action <= 80:
+        if 0 <= action <= 80:
             block = self._block_1
-            location = [action // 9, action % 9]
+            location = (action // 9, action % 9)
 
         # Second Block
-        elif 81 <= action and action <= 161:
+        elif 81 <= action <= 161:
             block = self._block_2
-            location = [(action - 81) // 9, (action - 81) % 9]
+            location = ((action - 81) // 9, (action - 81) % 9)
 
         # Third Block
+        # 162 <= action < 243
         else:
             block = self._block_3
-            location = [(action - 162) // 9, (action - 162) % 9]
+            location = ((action - 162) // 9, (action - 162) % 9)
 
         return block, location
 
-    # Gets the position relative to the center of the border of the block.
-    def get_block_square(self, block: np.ndarray) -> Tuple[int, int, int, int]:
-        row = []
-        col = []
+    def get_block_square(self, block: NDArray[np.int8]) -> Tuple[int, int, int, int]:
+        """Creates a rectangle that encloses only the actual blocks within a 5x5 grid,
+        and returns the relative edge coordinates to the center.
 
+        Args:
+            block (NDArray[np.int8]): An array representing the block shape with a size of 5x5.
+
+        Returns:
+            Tuple[int, int, int, int]: (r_min, r_max, c_min, c_max),
+            The position of the corner enclosing the block in the 5x5 array representing the block.
+            The rows of the actual block are in the range [r_min, r_max] and the columns are in the range [c_min, c_max].
+            In r and c, index 0 represents the top, leftmost corner.
+        """
+
+        r_min = 6
+        r_max = -1
+        c_min = 6
+        c_max = -1
+
+        # `.sum()` is faster than `.any()`
         for r in range(block.shape[0]):
             if block[r, :].sum() > 0:
-                row.append(r)
+                r_min = min(r_min, r)
+                r_max = max(r_max, r)
         for c in range(block.shape[1]):
             if block[:, c].sum() > 0:
-                col.append(c)
-        return (row[0], row[-1], col[0], col[-1])
+                c_min = min(c_min, c)
+                c_max = max(c_max, c)
+
+        return (r_min, r_max, c_min, c_max)
 
     def place_block(self, action: int):
+        """Finds the block and its position corresponding to the action, and places the block at that location.
+
+        Args:
+            action (int): action
+        """
         # c_loc : where the center of the block is placed
         block, c_loc = self.action_to_blk_pos(action)
-        r1, r2, c1, c2 = self.get_block_square(block)
-        self._board[c_loc[0] + r1 - 2 : c_loc[0] + r2 - 1, c_loc[1] + c1 - 2 : c_loc[1] + c2 - 1] += block[
-            r1 : r2 + 1, c1 : c2 + 1
+        r_min, r_max, c_min, c_max = self.get_block_square(block)
+        self._board[c_loc[0] - 2 + r_min : c_loc[0] + r_max - 1, c_loc[1] + c_min - 2 : c_loc[1] + c_max - 1] += block[
+            r_min : r_max + 1, c_min : c_max + 1
         ]
 
-    def step(self, action: int) -> Tuple[np.ndarray, int, bool, bool, Dict]:
+    def step(
+        self, action: int
+    ) -> Tuple[Dict[str, NDArray[np.int8]], int, bool, bool, Dict[str, NDArray[np.int8] | int | bool]]:
         err_msg = f"{action!r} ({type(action)}) invalid"
         assert self.action_space.contains(action), err_msg
 
@@ -292,6 +343,7 @@ class WoodokuEnv(gym.Env):
         self.combo = 0
         self.n_cell = 0
 
+        # invalid action, attempting to place a block where a block is already placed
         if not self.legality[action]:
             self.is_legal = False
             reward = 0
@@ -323,7 +375,7 @@ class WoodokuEnv(gym.Env):
 
         return self._get_obs(), reward, terminated, False, self._get_info()
 
-    def _line_printer(self, line: np.ndarray):
+    def _line_printer(self, line: NDArray) -> str:
         return np.array2string(line, separator="", formatter={"str_kind": lambda x: x})
 
     def render(self):
