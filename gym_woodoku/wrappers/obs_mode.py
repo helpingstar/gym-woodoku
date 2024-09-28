@@ -15,10 +15,10 @@ class ObservationMode(gym.ObservationWrapper):
             self.observation_space = Box(low=0, high=1, shape=(4, 9, 9), dtype=np.float32)
 
     def observation(self, obs):
-        board = obs['board']
-        block_1 = obs['block_1']
-        block_2 = obs['block_2']
-        block_3 = obs['block_3']
+        board = obs["board"]
+        block_1 = obs["block_1"]
+        block_2 = obs["block_2"]
+        block_3 = obs["block_3"]
         if self.n_channel == 1:
             total_board = np.zeros((15, 15), dtype=np.uint8)
             total_board[0:9, 3:12] = board
@@ -35,4 +35,3 @@ class ObservationMode(gym.ObservationWrapper):
             channel_2[2:7, 2:7] = block_2
             channel_3[2:7, 2:7] = block_3
             return np.stack([board, channel_1, channel_2, channel_3])
-            

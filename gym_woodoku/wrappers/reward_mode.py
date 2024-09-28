@@ -9,17 +9,16 @@ class RewardMode(gym.Wrapper):
 
     def step(self, action):
         obs, _, terminated, truncated, info = self.env.step(action)
-        straight = info['straight']
-        combo = info['combo']
-        n_cell = info['n_cell']
+        straight = info["straight"]
+        combo = info["combo"]
+        n_cell = info["n_cell"]
 
-        if self.mode == 'woodoku':
+        if self.mode == "woodoku":
             if combo == 0:
                 reward = n_cell
             else:
                 reward = 28 * combo + 10 * straight + n_cell - 20
-        elif self.mode == 'non_straight':
+        elif self.mode == "non_straight":
             reward = 0.1 * n_cell + combo
-
 
         return obs, reward, terminated, truncated, info

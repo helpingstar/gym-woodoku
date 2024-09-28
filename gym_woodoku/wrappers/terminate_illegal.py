@@ -8,7 +8,7 @@ class TerminateIllegalWoodoku(gym.Wrapper):
 
     def step(self, action):
         obs, reward, terminated, truncated, info = self.env.step(action)
-        if info['is_legal']:
+        if info["is_legal"]:
             return obs, reward, terminated, truncated, info
         else:
             return obs, self._illegal_reward, True, truncated, info

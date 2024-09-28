@@ -57,6 +57,9 @@ Issues = "https://github.com/helpingstar/gym-woodoku/issues"
 [tool.ruff]
 line-length = 120
 target-version = "py310"
+exclude = [
+    "gym_woodoku/envs/blocks.py"
+]
 
 [tool.ruff.lint]
 ignore = [

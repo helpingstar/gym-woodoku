@@ -1,6 +1,6 @@
 """
-This code is written to reference board positions based on `r`(row) and `c`(column) instead of `x` and `y`. 
-The top left corner is represented as [0, 0], where the first axis indicates `r` and the second axis indicates `c`, 
+This code is written to reference board positions based on `r`(row) and `c`(column) instead of `x` and `y`.
+The top left corner is represented as [0, 0], where the first axis indicates `r` and the second axis indicates `c`,
 with indices increasing downwards and to the right, respectively.
 """
 
